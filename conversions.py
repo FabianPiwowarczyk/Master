@@ -4,13 +4,15 @@ import numpy as np
 
 from constants import *
 
+
 def hum2mr(hum_lay):
     """
     convert specific humidity (mass h2o / mass wet air) to dry air mole fraction (n_h2o / n_dryair) in ppm
     """
-    h2o_lay = hum_lay / (1. - hum_lay) * mdry / mh2o * 1.e6 # reversed, TBC
+    h2o_lay = hum_lay / (1. - hum_lay) * mdry / mh2o * 1.e6  # reversed, TBC
 
-    return(h2o_lay)
+    return h2o_lay
+
 
 def gas2mr(gas_lay, mgas, h2o_dry):
     """
@@ -36,7 +38,7 @@ def total_column(gas_lay, dry_col):
     """
     compute total column (average dry air mole fraction)
     """
-    tc = np.sum(gas_lay*dry_col, axis=-1)/np.sum(dry_col, axis=-1) # last dim = altitude
+    tc = np.sum(gas_lay*dry_col, axis=-1)/np.sum(dry_col, axis=-1)  # last dim = altitude
     
     return tc
 
@@ -103,6 +105,7 @@ def geometric_height(phi_lay, gra_geo):
 
     return gmh_lay
 
+
 def grav_acc(gra_geo, gmh_lay):
     """
     calculate gravitational acceleration at layers
@@ -113,6 +116,7 @@ def grav_acc(gra_geo, gmh_lay):
 
     return gra_lay
 
+
 def dry_column(pre_lev, h2o_dry, gra_lay):
     """
     calculate dry column
@@ -120,9 +124,9 @@ def dry_column(pre_lev, h2o_dry, gra_lay):
     h2o_dry =  dry air mole fraction of h2o in ppm
     gra_lay = gravitational acceleration at layers
     """
-    
+
     #calculate delta pressure in Pa devided by 10^4 in order to calculate number of particles over 1cm^2 (not 1m^2)
-    pre_del = (pre_lev[:,:,0:-1] - pre_lev[:,:,1:])
+    pre_del = (pre_lev[:, :, 0:-1] - pre_lev[:, :, 1:])
     pre_del /= 100.
     #convert dry mole fraction of h2o to wet mole fraction (not in ppm)
     hdry = h2o_dry * 1e-6 # ppm -> 1

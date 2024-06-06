@@ -1,26 +1,8 @@
 import netCDF4 as nc
+import IASI
 
-# Path to the local NetCDF file
+
 file_path = "data/IASIA_MUSICA_030300_L2_AllTargetProducts_20200101000557_68496.nc"
-
-
-
-
-def read_iasi(path):
-    data = dict()
-
-    dataset = nc.Dataset(path, mode='r')
-
-    data['n2o'] = dataset.variables['musica_ghg'][:, 0]
-    data['time'] = dataset.variables['time'][:]
-    data['lon'] = dataset.variables['lon'][:]
-    data['lat'] = dataset.variables['lat'][:]
-    data['pressure_levels'] = dataset.variables['musica_pressure_levels'][:]
-    data['h2o'] = dataset.variables['eumetsat_h2o'][:]
-
-    dataset.close()
-
-
 
 # Open the dataset
 dataset = nc.Dataset(file_path, mode='r')
@@ -51,7 +33,6 @@ def printvar(var_name):
         print("Dimensions:", variable.dimensions)
 
 
-printvar('eumetsat_h2o')
+printvar('musica_wv')
 
-# Close the dataset
-dataset.close()
+#print(IASI.read_all_iasi('data'))
