@@ -46,7 +46,7 @@ def plot_lv3_data(x_res, y_res, th, dir_path, sat, vmin=None, vmax=None):
         plt.pcolormesh(lon_bnds, lat_bnds, tot_col, transform=ccrs.PlateCarree(), cmap='jet'
                        , vmin=vmin, vmax=vmax)
 
-        plt.colorbar(label=r'$\mathrm{xN}_2\mathrm{O}$ in ppm')
+        plt.colorbar(label=r'$\mathrm{xN}_2\mathrm{O}$ in ppb')
         plt.title(f'{sat} {x_res}x{y_res} gridded data 2020-{m}')
 
         outpath = f'pictures/{sat}_{x_res}x{y_res}_{m}.png'
@@ -88,7 +88,7 @@ def combined_plot(x_res, y_res, th, dir_path, var, vmin=None, vmax=None):
         # Plot the tot_col variable for IASI
         iasi_plot = ax1.pcolormesh(lon_bnds, lat_bnds, variable_iasi, transform=ccrs.PlateCarree(), cmap='jet',
                                    vmin=vmin, vmax=vmax)
-        ax1.set_title('IASI')
+        ax1.set_title(f'IASI {x_res}x{y_res} grid 2020-{m}')
 
         # ---------------- Plot 2: gosat ----------------
         ax2.coastlines()
@@ -105,7 +105,7 @@ def combined_plot(x_res, y_res, th, dir_path, var, vmin=None, vmax=None):
         # Plot the count variable for GOSAT
         gosat_plot = ax2.pcolormesh(lon_bnds, lat_bnds, variable_gosat, transform=ccrs.PlateCarree(), cmap='jet',
                                     vmin=vmin, vmax=vmax)
-        ax2.set_title('GOSAT')
+        ax2.set_title(f'GOSAT {x_res}x{y_res} grid 2020-{m}')
 
         # ---------------- Shared Colorbar ----------------
         # Create a shared colorbar for both subplots
@@ -120,8 +120,8 @@ def plot_dif(x_res, y_res, th, dir_path, vmin=None, vmax=None):
 
     months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
 
-    # mini = []
-    # maxi = []
+    mini = []
+    maxi = []
 
     for m in months:
         ds_iasi = xr.open_dataset(dir_path.format('iasi', m, x_res, y_res, th))
@@ -134,8 +134,8 @@ def plot_dif(x_res, y_res, th, dir_path, vmin=None, vmax=None):
 
         com_col = tot_col_gosat - tot_col_iasi
 
-        # mini.append(np.nanmin(com_col))
-        # maxi.append(np.nanmax(com_col))
+        mini.append(np.nanmin(com_col))
+        maxi.append(np.nanmax(com_col))
 
         lon_bnds = bnds(lon)
         lat_bnds = bnds(lat)
@@ -157,10 +157,10 @@ def plot_dif(x_res, y_res, th, dir_path, vmin=None, vmax=None):
         plt.pcolormesh(lon_bnds, lat_bnds, com_col, transform=ccrs.PlateCarree(), cmap='jet'
                        , vmin=vmin, vmax=vmax)
 
-        plt.colorbar(label=r'$\mathrm{xN}_2\mathrm{O}$ in ppm')
+        plt.colorbar(label=r'$\mathrm{xN}_2\mathrm{O}$ in ppb')
         plt.title(f'gosat minus iasi {x_res}x{y_res} gridded data 2020-{m}')
 
         outpath = f'pictures/dif_{x_res}x{y_res}_{m}.png'
         plt.savefig(outpath)
 
-    # print(np.mean(mini), np.mean(maxi))
+    print(np.mean(mini), np.mean(maxi))
