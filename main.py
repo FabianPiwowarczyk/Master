@@ -11,9 +11,9 @@ file_path = "data/IASIA_MUSICA_030300_L2_AllTargetProducts_20200101000557_68496.
 dataset = nc.Dataset(file_path, mode='r')
 
 # Print a list of all variable names
-print("Variable names:")
-for var_name in dataset.variables:
-    print(var_name)
+#print("Variable names:")
+#for var_name in dataset.variables:
+#    print(var_name)
 
 
 def printvar(var_name):
@@ -32,8 +32,8 @@ def printvar(var_name):
     if var_name in ['musica_ghg']:
         print(variable[:, 0][0])
     else:
-        print(variable[:].shape)#.filled(np.nan))  # Print all the values of the variable#
-        #print(variable[0][0][:][:])
+        #print(variable[0])
+        print(variable[0][0][:][:])
         #print(variable[0])
 
 
@@ -41,28 +41,31 @@ def printvar(var_name):
         print("Dimensions:", variable.dimensions)
 
 #printvar('musica_fit_quality_flag')
-printvar('musica_ghg_apriori')
-printvar('musica_ghg_avk_rank')
-printvar('musica_ghg_avk_val')
-printvar('musica_ghg_avk_lvec')
-printvar('musica_ghg_avk_rvec')
+#printvar('musica_nol')
+#printvar('musica_ghg_apriori')
+#printvar('musica_ghg_avk_rank')
+#printvar('musica_ghg_avk_val')
+#printvar('musica_ghg_avk_lvec')
+#printvar('musica_ghg_avk_rvec')
 
-rank = int(dataset.variables['musica_ghg_avk_rank'][0])
-eig_val = dataset.variables['musica_ghg_avk_val'][0][:rank]
-lvec = dataset.variables['musica_ghg_avk_lvec'][0][0][:rank][:].T
-rvec = dataset.variables['musica_ghg_avk_rvec'][0][0][:rank][:].T
-
-rxr_val = np.diag(eig_val)
-
-avk = np.dot(np.dot(lvec, rxr_val), rvec.T)
-
-print(avk)
-
-#print(np.diag(avk))
+#data = IASI.read_iasi('data/IASIA_MUSICA_030300_L2_AllTargetProducts_20200101000557_68496.nc')
 
 
-# from convert_func import convert
-# convert()
+# rank = int(dataset.variables['musica_ghg_avk_rank'][0])
+# eig_val = dataset.variables['musica_ghg_avk_val'][0][:rank]
+#
+# lvec = dataset.variables['musica_ghg_avk_lvec'][0][0][:rank][:].T
+# rvec = dataset.variables['musica_ghg_avk_rvec'][0][0][:rank][:].T
+#
+# rxr_val = np.diag(eig_val)
+#
+# avk = np.dot(np.dot(lvec, rxr_val), rvec.T)
+
+#print(avk)
+
+
+from convert_func import convert
+#convert()
 
 import gridding
 #gridding.replot_all()

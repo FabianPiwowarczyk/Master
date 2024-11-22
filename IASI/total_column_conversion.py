@@ -239,11 +239,11 @@ def data2total_col(path, date, i, date_tuples, org_path):
         # phi_lev = geopot_levels(phi_sur=phi_sur, tem_lay=tem_lay, hum_lay=hum_lay, pre_lev=col_dic['pre_lev'])
         #
         # phi_lay = geopot_layers(phi_lev=phi_lev, tem_lay=tem_lay, hum_lay=hum_lay, pre_lev=col_dic['pre_lev'])
-        #
+
         gra_geo = grav_geoid(lat=row_lat)
-        #
+
         # gmh_lay = geometric_height(phi_lay=phi_lay, gra_geo=gra_geo)
-        #
+
         gra_lay = grav_acc(gra_geo=gra_geo, gmh_lay=alt_lay)
 
         # if float(0) in gra_lay:
@@ -263,6 +263,9 @@ def data2total_col(path, date, i, date_tuples, org_path):
         dry_col = dry_column(pre_lev=col_dic['pre_lev'], h2o_dry=h2o_lay, gra_lay=gra_lay)
 
         tc = total_column(gas_lay=n2o_lay, dry_col=dry_col, row=row)
+
+        from .chng_prior import change_prior
+        change_prior(tc, dry_col)
 
         if np.isnan(tc):
             tc_nan_count += 1

@@ -31,6 +31,8 @@ def read_iasi(path):
     data['quality_flag'] = dataset.variables['musica_fit_quality_flag'][:]
     data['observation_id'] = dataset.variables['observation_id'][:]
     data['alt_lev'] = dataset.variables['musica_altitude_levels'][:].filled(np.nan)
+    data['num_lev'] = dataset.variables['musica_nol'][:]
+    data['apri'] = dataset.variables['musica_ghg_apriori'][:, 0]
 
     dataset.close()
 
@@ -68,7 +70,7 @@ def read_all_iasi(dir, date, i, date_tuples, org_path):
     for key in combined_dict.keys():
         combined_dict[key] = combined_dict[key][mask]
 
-    flip_keys = ['n2o_lev_dry', 'pre_lev', 'h2o_lev_dry', 'tem_lev', 'alt_lev']
+    flip_keys = ['n2o_lev_dry', 'pre_lev', 'h2o_lev_dry', 'tem_lev', 'alt_lev', 'apri']
     for key in flip_keys:
         combined_dict[key] = combined_dict[key][:, ::-1]
 

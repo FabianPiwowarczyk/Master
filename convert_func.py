@@ -24,7 +24,7 @@ def convert():
     date_tuples = date_array[1:, :]
 
     for i, date in enumerate(date_tuples):
-        out_path = f'finished_data/2020_{date[0]}_{date[1]}.nc'
+        out_path = f'new_finished_data/2020_{date[0]}_{date[1]}.nc'
         if os.path.exists(out_path):
             print('File: ', out_path, ' already exists.')
         else:
