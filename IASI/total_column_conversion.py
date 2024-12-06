@@ -178,19 +178,6 @@ def data2total_col(path, date, i, date_tuples, org_path):
 
     iasi_data = read_all_iasi(dir=path, date=date, i=i, date_tuples=date_tuples, org_path=org_path)
 
-    # print(iasi_data['n2o_lev_dry'][4559, :])
-    # print(iasi_data['h2o_lev_dry'][4559, :])
-    # print(iasi_data['pre_lev'][4559, :])
-    # print(iasi_data['tem_lev'][4559, :])
-
-    # print(iasi_data['lon'][3788], iasi_data['lat'][3788])
-
-    # all_phi_sur = read_phi_sur(data=iasi_data)
-
-    # all_phi_sur = np.loadtxt('surface_pot.txt', delimiter=' ')
-
-    # np.savetxt('surface_pot.txt', X=all_phi_sur, delimiter=' ')
-
     tot_col = np.zeros_like(iasi_data['lon'])
     nan_flags = np.zeros_like(iasi_data['lon'])
 
@@ -224,48 +211,23 @@ def data2total_col(path, date, i, date_tuples, org_path):
 
         row_lat = iasi_data['lat'][row]
 
-        # phi_sur = all_phi_sur[row]
-
         col_dic['pre_lev'] /= 100  # from Pa to hPa
 
         n2o_lay = lev2lay(x_lev=col_dic['n2o_lev'])
-        # tem_lay = lev2lay(x_lev=col_dic['tem_lev'])
         h2o_lay = lev2lay(x_lev=col_dic['h2o_lev'])
 
         alt_lay = altitude_lev2lay(alt_lev=col_dic['alt_lev'], pre_lev=col_dic['pre_lev'])
 
-        # hum_lay = h2o_to_hum(h2o_lay=h2o_lay)
-        #
-        # phi_lev = geopot_levels(phi_sur=phi_sur, tem_lay=tem_lay, hum_lay=hum_lay, pre_lev=col_dic['pre_lev'])
-        #
-        # phi_lay = geopot_layers(phi_lev=phi_lev, tem_lay=tem_lay, hum_lay=hum_lay, pre_lev=col_dic['pre_lev'])
-
         gra_geo = grav_geoid(lat=row_lat)
 
-        # gmh_lay = geometric_height(phi_lay=phi_lay, gra_geo=gra_geo)
-
         gra_lay = grav_acc(gra_geo=gra_geo, gmh_lay=alt_lay)
-
-        # if float(0) in gra_lay:
-        #     zero_count = len(gra_lay) - np.count_nonzero(gra_lay)
-        #
-        #     if zero_count == len(gra_lay):
-        #         print(iasi_data['observation_id'][row])
-        #         break
-        #         fucking_hell_count += 1
-        #         continue
-        #
-        #     col_dic['pre_lev'] = col_dic['pre_lev'][:-zero_count]
-        #     h2o_lay = h2o_lay[:-zero_count]
-        #     gra_lay = gra_lay[:-zero_count]
-        #     n2o_lay = n2o_lay[:-zero_count]
 
         dry_col = dry_column(pre_lev=col_dic['pre_lev'], h2o_dry=h2o_lay, gra_lay=gra_lay)
 
         tc = total_column(gas_lay=n2o_lay, dry_col=dry_col, row=row)
 
         from .chng_prior import change_prior
-        change_prior(tc, dry_col)
+        change_prior(tc, dry_col, col_dic['pre_lev'])
 
         if np.isnan(tc):
             tc_nan_count += 1

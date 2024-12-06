@@ -65,8 +65,35 @@ def printvar(var_name):
 
 
 from convert_func import convert
-#convert()
+convert()
 
 import gridding
 #gridding.replot_all()
+
+
+# xn2o = 330.e-3  # ppm
+# n2o_prof = np.array([0.31999999,
+#                      0.31999999,
+#                      0.31999999,
+#                      0.31999999,
+#                      0.31999999,
+#                      0.31999999,
+#                      0.31999999,
+#                      0.31999999,
+#                      0.31999999,
+#                      0.31999999,
+#                      0.31999999,
+#                      0.31999999,
+#                      0.31999999,
+#                      0.31967527,
+#                      0.31827208,
+#                      0.31372729,
+#                      0.30633333,
+#                      0.29544127,
+#                      0.26624754,
+#                      0.17457867])
+#
+# n2o_prof = xn2o * n2o_prof / np.mean(n2o_prof)
+#
+# print(n2o_prof)
 
