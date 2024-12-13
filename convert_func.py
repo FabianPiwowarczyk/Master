@@ -9,6 +9,8 @@ from IASI.total_column_conversion import data2total_col
 def convert():
     data_path = '/misc/hypatia/data/IASI/L2_MUSICA/V3.30/MetopA/2020'
 
+    quality_flag = 3
+
     months_paths = [f.path for f in os.scandir(data_path) if f.is_dir()]
     months_paths.sort()
     months = [m.replace(data_path, '').replace('/', '') for m in months_paths]
@@ -31,7 +33,8 @@ def convert():
             path = join(data_path, str(date[0]), str(date[1]))
             print(path)
 
-            data = data2total_col(path=path, date=date, i=i, date_tuples=date_tuples, org_path=data_path)
+            data = data2total_col(path=path, date=date, i=i, date_tuples=date_tuples,
+                                  org_path=data_path, quality_flag=quality_flag)
 
             descriptions = {
                 'n2o_lev_dry': "N2O leveled data, dry air mole fraction (ppmv).",
@@ -42,7 +45,6 @@ def convert():
                 'h2o_lev_dry': "water vapor, dry air mole fraction (ppmv).",
                 'tem_lev': "atmospheric temperatures.",
                 'total_column': "total column in ppm.",
-                'nan_flag': "Integer that represents the amount of NaN's cut from the column.",
                 'alt_lev': "Altitude levels in meters above sea level."
             }
 

@@ -174,40 +174,27 @@ def altitude_lev2lay(alt_lev, pre_lev):
     return alt_lay
 
 
-def data2total_col(path, date, i, date_tuples, org_path):
+def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
 
-    iasi_data = read_all_iasi(dir=path, date=date, i=i, date_tuples=date_tuples, org_path=org_path)
+    iasi_data = read_all_iasi(dir=path, date=date, i=i, date_tuples=date_tuples,
+                              org_path=org_path, quality_flag=quality_flag)
 
     tot_col = np.zeros_like(iasi_data['lon'])
-    nan_flags = np.zeros_like(iasi_data['lon'])
-
-    tc_nan_count = 0
+    # nan_flags = np.zeros_like(iasi_data['lon'])
 
     print('Converting data to total columns:')
     items = list(range(iasi_data['time'].shape[0]))
 
     for row in tqdm(items):
 
+        nan_count = len(iasi_data['n2o_lev_dry'][row, :]) - iasi_data['num_lev'][row]  # number of nan in the profile
+
         col_dic = {
-        'n2o_lev': iasi_data['n2o_lev_dry'][row, :],
-        'h2o_lev': iasi_data['h2o_lev_dry'][row, :],
-        'pre_lev': iasi_data['pre_lev'][row, :],
-        'alt_lev': iasi_data['alt_lev'][row, :]
+        'n2o_lev': iasi_data['n2o_lev_dry'][row, nan_count:],
+        'h2o_lev': iasi_data['h2o_lev_dry'][row, nan_count:],
+        'pre_lev': iasi_data['pre_lev'][row, nan_count:],
+        'alt_lev': iasi_data['alt_lev'][row, nan_count:]
                     }
-
-        if (nan_count := np.isnan(col_dic['n2o_lev']).sum()) > 0:
-            nan_flags[row] = nan_count
-            if nan_count == len(col_dic['n2o_lev']):
-                raise ValueError(f"In row {row} are only nan values.")
-
-            for key in col_dic.keys():
-                if np.isnan(col_dic[key]).sum() == nan_count:
-                    col_dic[key] = col_dic[key][nan_count:]
-                else:
-                    raise ValueError(f"In row {row} the nan value counts are not equal!")
-
-                if np.isnan(col_dic[key]).any():
-                    raise ValueError(f"In row {row} are still nan values left after removal.")
 
         row_lat = iasi_data['lat'][row]
 
@@ -229,16 +216,12 @@ def data2total_col(path, date, i, date_tuples, org_path):
         from .chng_prior import change_prior
         change_prior(tc, dry_col, col_dic['pre_lev'])
 
-        if np.isnan(tc):
-            tc_nan_count += 1
-        else:
-            tot_col[row] = tc
+        tot_col[row] = tc
 
         if 0.2 >= tc >= 0.5:
             print('tc is out of bounds: ', tc)
 
     iasi_data['total_column'] = tot_col
-    iasi_data['nan_flg'] = nan_flags
-    print('Returning total columns with nan count: ', tc_nan_count)
+    print('Returning total columns.')
 
     return iasi_data

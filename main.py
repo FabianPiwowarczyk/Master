@@ -32,10 +32,8 @@ def printvar(var_name):
     if var_name in ['musica_ghg']:
         print(variable[:, 0][0])
     else:
-        #print(variable[0])
-        print(variable[0][0][:][:])
-        #print(variable[0])
-
+        print(variable[:])
+        #print(variable[0][0][:][:])
 
     if hasattr(variable, 'dimensions'):
         print("Dimensions:", variable.dimensions)
@@ -48,8 +46,7 @@ def printvar(var_name):
 #printvar('musica_ghg_avk_lvec')
 #printvar('musica_ghg_avk_rvec')
 
-#data = IASI.read_iasi('data/IASIA_MUSICA_030300_L2_AllTargetProducts_20200101000557_68496.nc')
-
+# data = IASI.read_iasi('data/IASIA_MUSICA_030300_L2_AllTargetProducts_20200101000557_68496.nc')
 
 # rank = int(dataset.variables['musica_ghg_avk_rank'][0])
 # eig_val = dataset.variables['musica_ghg_avk_val'][0][:rank]

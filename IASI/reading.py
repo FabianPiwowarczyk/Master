@@ -34,6 +34,31 @@ def read_iasi(path):
     data['num_lev'] = dataset.variables['musica_nol'][:]
     data['apri'] = dataset.variables['musica_ghg_apriori'][:, 0]
 
+    data['avk_rank'] = dataset.variables['musica_ghg_avk_rank'][:]
+
+    # make that shit stackable
+    if dataset.variables['musica_ghg_avk_val'][:, :].shape[1] != 16:
+        profile_count = dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :].shape[0]
+        nan_count = 16 - dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :].shape[1]
+        nol_count = dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :].shape[2]
+
+        nan_slice_val = np.ma.masked_array(np.full((profile_count, nan_count), np.nan))
+        nan_slice_vec = np.ma.masked_array(np.full((profile_count, nan_count, nol_count), np.nan))
+
+        data['avk_val'] = np.concatenate(
+            [dataset.variables['musica_ghg_avk_val'][:, :], nan_slice_val], axis=1)
+
+        data['avk_lvec'] = np.concatenate(
+            [dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :], nan_slice_vec], axis=1)
+
+        data['avk_rvec'] = np.concatenate(
+            [dataset.variables['musica_ghg_avk_rvec'][:, 0, :, :], nan_slice_vec], axis=1)
+
+    else:
+        data['avk_val'] = dataset.variables['musica_ghg_avk_val'][:, :]
+        data['avk_lvec'] = dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :]
+        data['avk_rvec'] = dataset.variables['musica_ghg_avk_rvec'][:, 0, :, :]
+
     dataset.close()
 
     return data
@@ -53,7 +78,7 @@ def _file_paths(dir, i, date_tuples, org_path):
     return paths
 
 
-def read_all_iasi(dir, date, i, date_tuples, org_path):
+def read_all_iasi(dir, date, i, date_tuples, org_path, quality_flag):
     paths = _file_paths(dir, i, date_tuples, org_path)
     combined_dict = read_iasi(paths[0])
 
@@ -69,6 +94,11 @@ def read_all_iasi(dir, date, i, date_tuples, org_path):
 
     for key in combined_dict.keys():
         combined_dict[key] = combined_dict[key][mask]
+
+    # filtering quality_flag
+    quality_mask = combined_dict['quality_flag'] >= quality_flag
+    for key in combined_dict.keys():
+        combined_dict[key] = combined_dict[key][quality_mask]
 
     flip_keys = ['n2o_lev_dry', 'pre_lev', 'h2o_lev_dry', 'tem_lev', 'alt_lev', 'apri']
     for key in flip_keys:
