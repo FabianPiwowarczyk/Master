@@ -187,6 +187,14 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
 
     for row in tqdm(items):
 
+        col_avk_dict = {
+        'avk_rank': iasi_data['avk_rank'][row],
+        'avk_val': iasi_data['avk_val'][row],
+        'avk_lvec': iasi_data['avk_lvec'][row],
+        'avk_rvec': iasi_data['avk_rvec'][row],
+        'num_lev': iasi_data['num_lev'][row]
+                        }
+
         nan_count = len(iasi_data['n2o_lev_dry'][row, :]) - iasi_data['num_lev'][row]  # number of nan in the profile
 
         col_dic = {
@@ -214,7 +222,11 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
         tc = total_column(gas_lay=n2o_lay, dry_col=dry_col, row=row)
 
         from .chng_prior import change_prior
-        change_prior(tc, dry_col, col_dic['pre_lev'])
+        change_prior(tc, dry_col, col_dic['pre_lev'], col_avk_dict, row, row_lat,
+                     iasi_data['lon'][row], col_dic['alt_lev'])
+
+        if row == 100:
+            breakpoint()
 
         tot_col[row] = tc
 
