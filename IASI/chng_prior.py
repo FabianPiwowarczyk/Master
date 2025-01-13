@@ -7,24 +7,24 @@ def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev):
 
     avk = calc_avk(avk_dict=avk_dict)
 
-    fig1 = plt.figure()
+    # fig1 = plt.figure()
 
     # for i in range(avk_dict['num_lev']):
     #     plt.plot(avk[:, i], pre_lvl[::-1])
 
-    fig2 = plt.figure()
-    cols = list(range(0, avk_dict['num_lev'] + 1, 5))
+    # fig2 = plt.figure()
+    # cols = list(range(0, avk_dict['num_lev'] + 1, 5))
+    #
+    # lev = list(range(0, avk_dict['num_lev']))
+    # for i in cols:
+    #     plt.plot(avk[:, i], alt_lev[::-1], label=f'{alt_lev[::-1][i]}')
+    #     plt.legend()
+    #     plt.title(f'avk_row{row}, lat:{lat}, lon:{lon}')
 
-    lev = list(range(0, avk_dict['num_lev']))
-    for i in cols:
-        plt.plot(avk[:, i], alt_lev[::-1], label=f'{alt_lev[::-1][i]}')
-        plt.legend()
-        plt.title(f'avk_row{row}, lat:{lat}, lon:{lon}')
+    # outpath = f'avk_pics/avk_row{row}.png'
+    # plt.savefig(outpath)
 
-    outpath = f'avk_pics/avk_row{row}.png'
-    plt.savefig(outpath)
 
-    #breakpoint()
 
 
     xn2o = 330.e-3  # ppm
@@ -72,8 +72,56 @@ def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev):
     for i in range(len(gosat_pre_lay)):
         gosat_pre_lay[i] = (gosat_pre_lev[i] + gosat_pre_lev[i+1]) / 2
 
-    plt.plot(n_lay, gosat_pre_lay[:-1])
-    plt.scatter(cum_sum_par, pre_lay)
+    # plt.plot(n_lay, gosat_pre_lay[:-1])
+    # plt.scatter(cum_sum_par, pre_lay)
+
+    # cal the factor of how much each iasi layer lays in each gosat layer
+    deltas = np.zeros((len(gosat_pre_lay), len(pre_lay)))
+
+    for i in range(deltas.shape[0]):
+        gpre_1 = gosat_pre_lev[i]
+        gpre_2 = gosat_pre_lev[i+1]
+        for j in range(deltas.shape[1]):
+            ipre_1 = pre_lvl[j]
+            ipre_2 = pre_lvl[j+1]
+
+            if ipre_2 >= gpre_1:  # iasi layer is under gosat layer
+                deltas[i, j] = 0.
+            elif (ipre_1 <= gpre_1) and (ipre_2 >= gpre_2):  # iasi layer completely  inside gosat layer
+                deltas[i, j] = 1.
+            elif (ipre_1 > gpre_1) and (ipre_2 < gpre_1):  # cut from below
+                i_del = ipre_1 - ipre_2
+                pre_del = gpre_1 - ipre_2
+                if ipre_2 < gpre_2:  # edge case if 1 iasi layer touches 3 gosat layers
+                    overshoot = gpre_2 - ipre_2
+                else:
+                    overshoot = 0
+                deltas[i, j] = (pre_del - overshoot) / i_del
+            elif (ipre_1 > gpre_2) and (ipre_2 < gpre_2):  # cut from top
+                i_del = ipre_1 - ipre_2
+                pre_del = ipre_1 - gpre_2
+                if ipre_1 > gpre_1:  # edge case if 1 iasi layer touches 3 gosat layers
+                    overshoot = ipre_1 - gpre_1
+                else:
+                    overshoot = 0
+                deltas[i, j] = (pre_del - overshoot) / i_del
+            elif ipre_1 <= gpre_2:  # iasi layer over gosat layer
+                deltas[i, j] = 0.
+
+    n2o_gosat_lay = np.sum(n2o_prof[:, np.newaxis] * deltas, axis=0)
+
+    # print(n2o_prof)
+    # print(gosat_pre_lay)
+    #
+    # ypre = np.linspace(100, 100, 10)
+    # x = np.interp(ypre, gosat_pre_lay[::-1], n2o_prof[::-1])
+
+    fig = plt.figure()
+    plt.scatter(n2o_prof, gosat_pre_lay)
+    plt.scatter(n2o_gosat_lay, pre_lay)
+    plt.show()
+
+    breakpoint()
 
 
 def calc_avk(avk_dict):
