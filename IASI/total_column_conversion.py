@@ -6,7 +6,7 @@ from tqdm import tqdm
 from .conv_constants import *
 
 
-def total_column(gas_lay, dry_col, row):
+def total_column(gas_lay, dry_col):
     """
     compute total column (average dry air mole fraction)
     input:
@@ -201,7 +201,8 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
         'n2o_lev': iasi_data['n2o_lev_dry'][row, nan_count:],
         'h2o_lev': iasi_data['h2o_lev_dry'][row, nan_count:],
         'pre_lev': iasi_data['pre_lev'][row, nan_count:],
-        'alt_lev': iasi_data['alt_lev'][row, nan_count:]
+        'alt_lev': iasi_data['alt_lev'][row, nan_count:],
+        'apri': iasi_data['apri'][row, nan_count:]
                     }
 
         row_lat = iasi_data['lat'][row]
@@ -219,11 +220,11 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
 
         dry_col = dry_column(pre_lev=col_dic['pre_lev'], h2o_dry=h2o_lay, gra_lay=gra_lay)
 
-        tc = total_column(gas_lay=n2o_lay, dry_col=dry_col, row=row)
+        tc = total_column(gas_lay=n2o_lay, dry_col=dry_col)
 
         from .chng_prior import change_prior
         change_prior(tc, dry_col, col_dic['pre_lev'], col_avk_dict, row, row_lat,
-                     iasi_data['lon'][row], col_dic['alt_lev'])
+                     iasi_data['lon'][row], col_dic['alt_lev'], col_dic['apri'])
 
         if row == 100:
             breakpoint()

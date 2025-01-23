@@ -3,7 +3,7 @@ import numpy as np
 from dask.dot import label
 
 
-def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev):
+def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev, old_prior):
 
     avk = calc_avk(avk_dict=avk_dict)
 
@@ -75,7 +75,7 @@ def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev):
     # plt.plot(n_lay, gosat_pre_lay[:-1])
     # plt.scatter(cum_sum_par, pre_lay)
 
-    # cal the factor of how much each iasi layer lays in each gosat layer
+    # cal weights for weighted average
     deltas = np.zeros((len(gosat_pre_lay), len(pre_lay)))
 
     for i in range(deltas.shape[0]):
@@ -95,7 +95,7 @@ def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev):
                 if ipre_2 < gpre_2:  # edge case if 1 iasi layer touches 3 gosat layers
                     overshoot = gpre_2 - ipre_2
                 else:
-                    overshoot = 0
+                    overshoot = 0.
                 deltas[i, j] = (pre_del - overshoot) / i_del
             elif (ipre_1 > gpre_2) and (ipre_2 < gpre_2):  # cut from top
                 i_del = ipre_1 - ipre_2
@@ -103,12 +103,37 @@ def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev):
                 if ipre_1 > gpre_1:  # edge case if 1 iasi layer touches 3 gosat layers
                     overshoot = ipre_1 - gpre_1
                 else:
-                    overshoot = 0
+                    overshoot = 0.
                 deltas[i, j] = (pre_del - overshoot) / i_del
             elif ipre_1 <= gpre_2:  # iasi layer over gosat layer
                 deltas[i, j] = 0.
 
-    n2o_gosat_lay = np.sum(n2o_prof[:, np.newaxis] * deltas, axis=0)
+    n2o_gosat_lay = np.sum(n2o_prof[:, np.newaxis] * deltas, axis=0)  # calc weighted average
+
+    gosat_n2o_lev = np.zeros_like(pre_lvl)
+
+    # interpolate n2o ppm values for iasi lev. All flipped bc np.interp needs ascending values
+    gosat_n2o_lev[1:-1] = np.interp(pre_lvl[1:-1][::-1], pre_lay[::-1], n2o_gosat_lay[::-1])[::-1]
+
+    # calc first and last level n2o ppm value
+    gosat_n2o_lev[0] = 2 * n2o_gosat_lay[0] - gosat_n2o_lev[1]
+    gosat_n2o_lev[-1] = 2 * n2o_gosat_lay[-1] - gosat_n2o_lev[-2]
+
+    # correcting interpolation error. Normalize to xn2o
+    cor_fac = xn2o / total_column(n2o_gosat_lay, dry_col)
+    new_prior = gosat_n2o_lev * cor_fac
+
+    #print(old_prior)
+    #print(new_prior)
+    #print(avk)
+
+    #tc_cor = np.exp(np.matmul((1-avk), (np.log(new_prior) - np.log(old_prior)).T))
+    tc_cor_lev = np.matmul((1 - avk), (new_prior[::-1] - old_prior[::-1]))
+    print(tc_cor_lev)
+    print((1 - avk))
+
+    tc_cor_lay = lev2lay(tc_cor_lev)
+    #print(total_column(tc_cor_lay, dry_col))
 
     # print(n2o_prof)
     # print(gosat_pre_lay)
@@ -116,10 +141,10 @@ def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev):
     # ypre = np.linspace(100, 100, 10)
     # x = np.interp(ypre, gosat_pre_lay[::-1], n2o_prof[::-1])
 
-    fig = plt.figure()
-    plt.scatter(n2o_prof, gosat_pre_lay)
-    plt.scatter(n2o_gosat_lay, pre_lay)
-    plt.show()
+    # fig = plt.figure()
+    # plt.scatter(n2o_prof, gosat_pre_lay)
+    # plt.scatter(n2o_gosat_lay, pre_lay)
+    # plt.show()
 
     breakpoint()
 
@@ -136,3 +161,20 @@ def calc_avk(avk_dict):
     avk = np.dot(np.dot(lvec, rxr_val), rvec.T)
 
     return avk
+
+
+def total_column(gas_lay, dry_col):
+    """
+    compute total column (average dry air mole fraction)
+    input:
+        gas_lay : gas mixing ration in layers
+        dry_col : dry column
+    """
+
+    tc = np.sum(gas_lay * dry_col) / np.sum(dry_col)  # last dim = altitude
+
+    return tc
+
+
+def lev2lay(x_lev):
+    return (x_lev[1:] + x_lev[:-1]) / 2
