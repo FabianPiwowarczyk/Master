@@ -127,12 +127,12 @@ def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev, old_pri
     #print(new_prior)
     #print(avk)
 
-    #tc_cor = np.exp(np.matmul((1-avk), (np.log(new_prior) - np.log(old_prior)).T))
-    tc_cor_lev = np.matmul((1 - avk), (new_prior[::-1] - old_prior[::-1]))
-    print(tc_cor_lev)
-    print((1 - avk))
+    tc_cor = np.exp(np.matmul((np.eye(avk.shape[0])-avk), (np.log(new_prior[::-1]) - np.log(old_prior[::-1])).T))
+    #tc_cor_lev = np.matmul((1 - avk), (new_prior[::-1] - old_prior[::-1]))
+    print(tc_cor)
+    #print((1 - avk))
 
-    tc_cor_lay = lev2lay(tc_cor_lev)
+    #tc_cor_lay = lev2lay(tc_cor_lev)
     #print(total_column(tc_cor_lay, dry_col))
 
     # print(n2o_prof)
