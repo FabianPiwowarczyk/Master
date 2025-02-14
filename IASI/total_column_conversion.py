@@ -187,6 +187,11 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
 
     for row in tqdm(items):
 
+        # filter a good avk
+        if not is_point_in_square(iasi_data['lon'][row], iasi_data['lat'][row]):
+            continue
+        print(iasi_data['readable_time'][row])
+
         col_avk_dict = {
         'avk_rank': iasi_data['avk_rank'][row],
         'avk_val': iasi_data['avk_val'][row],
@@ -226,8 +231,11 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
         change_prior(tc, dry_col, col_dic['pre_lev'], col_avk_dict, row, row_lat,
                      iasi_data['lon'][row], col_dic['alt_lev'], col_dic['apri'])
 
-        if row == 100:
+        count = 0
+        if count == 100:
             breakpoint()
+        else:
+            count += 1
 
         tot_col[row] = tc
 
@@ -238,3 +246,21 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
     print('Returning total columns.')
 
     return iasi_data
+
+
+def is_point_in_square(lon, lat):
+    """
+    Check if a point (lon, lat) is inside a predefined square inside the Sahara Desert.
+
+    :param lon: Longitude of the point
+    :param lat: Latitude of the point
+    :return: True if the point is inside the square, False otherwise
+    """
+    square = {
+        'min_lon': 10.0,
+        'max_lon': 25.0,
+        'min_lat': 15.0,
+        'max_lat': 30.0
+    }
+
+    return (square['min_lon'] <= lon <= square['max_lon']) and (square['min_lat'] <= lat <= square['max_lat'])

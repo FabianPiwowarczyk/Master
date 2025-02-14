@@ -15,6 +15,9 @@ def convert():
     months_paths.sort()
     months = [m.replace(data_path, '').replace('/', '') for m in months_paths]
 
+    # start in July for north hemispheric summer
+    months = months[6:]
+
     date_array = np.array([0, 0])
     for m in months:
         days_paths = [f.path for f in os.scandir(join(data_path, m)) if f.is_dir()]
