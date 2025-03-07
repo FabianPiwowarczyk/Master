@@ -1,28 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from dask.dot import label
+from scipy.optimize import curve_fit
 
 
 def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev, old_prior):
 
     avk = calc_avk(avk_dict=avk_dict)
-
-    # fig1 = plt.figure()
-
-    # for i in range(avk_dict['num_lev']):
-    #     plt.plot(avk[:, i], pre_lvl[::-1])
-
-    # fig2 = plt.figure()
-    # cols = list(range(0, avk_dict['num_lev'] + 1, 5))
-    #
-    # lev = list(range(0, avk_dict['num_lev']))
-    # for i in cols:
-    #     plt.plot(avk[:, i], alt_lev[::-1], label=f'{alt_lev[::-1][i]}')
-    #     plt.legend()
-    #     plt.title(f'avk_row{row}, lat:{lat}, lon:{lon}')
-
-    # outpath = f'avk_pics/avk_row{row}.png'
-    # plt.savefig(outpath)
 
 
 
@@ -123,100 +107,136 @@ def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev, old_pri
     cor_fac = xn2o / total_column(n2o_gosat_lay, dry_col)
     new_prior = gosat_n2o_lev * cor_fac
 
-    #print(old_prior)
-    #print(new_prior)
-    #print(avk)
+    # find iasi level for the start of the linear fit
+    iasi_lvl_idx = np.where(deltas[17, :] == max(deltas[17, :]))[0][0]  # iasi lay idx, most rep in gosat lay 18
+    iasi_lvl_idx += 1  # for upper level idx
 
-    #print(new_prior - old_prior)
-    #print(np.log(new_prior) - np.log(old_prior))
-    #print(np.exp(np.log(new_prior) - np.log(old_prior)))
-    #print(np.matmul((np.eye(avk.shape[0]) - avk), (new_prior[::-1] - old_prior[::-1]).T))
-    #print(np.matmul((np.eye(avk.shape[0]) - avk), (new_prior[::-1] - old_prior[::-1])))
+    gosat_last_idx = np.where(deltas[19, :] == 1)[0][0]
+    gosat_last_idx += 1  # for upper level idx
 
+    new_prior[np.where(deltas[19, :] == 1)[0][1:]] = old_prior[np.where(deltas[19, :] == 1)[0][1:]]
 
-    tc_cor = np.exp(np.matmul((np.eye(avk.shape[0])-avk), (np.log(new_prior[::-1]) - np.log(old_prior[::-1])).T))
-    #tc_cor_lev = np.matmul((1 - avk), (new_prior[::-1] - old_prior[::-1]))
-    #print(tc_cor)
-    #print((1 - avk))
-
-    #tc_cor_lay = lev2lay(tc_cor_lev)
-    #print(total_column(tc_cor_lay, dry_col))
+    tc_cor = np.matmul((np.eye(avk.shape[0]) - avk), (np.log(new_prior[::-1]) - np.log(old_prior[::-1])).T)
+    print(tc_cor[::-1])
+    tc_cor_lay = lev2lay(np.exp(tc_cor[::-1]))
+    print(tc_cor_lay)
+    print(tc, total_column(tc_cor_lay, dry_col))
 
     # plotting priors
-    fig, axes = plt.subplots(2, 3, figsize=(10, 8), sharex=False, sharey=True)
-    y = [i for i in range(len(new_prior))]
-
-    axes[0, 0].plot(old_prior, y)
-    axes[0, 0].set_title("IASI prior")
-    axes[0, 0].set_xlabel("ppm")
-    axes[0, 0].set_ylabel("Height level")
-    axes[0, 0].set_xlim(0, 0.35)
-
-    axes[0, 1].plot(new_prior, y)
-    axes[0, 1].set_title("GOSAT prior")
-    axes[0, 1].set_xlabel("ppm")
-    axes[0, 1].set_xlim(0, 0.35)
-
-    axes[0, 2].plot(new_prior - old_prior, y)
-    axes[0, 2].set_title("Diff prior GOSAT - IASI")
-    axes[0, 2].set_xlabel("ppm")
-
-    axes[1, 0].plot(np.log(old_prior), y)
-    axes[1, 0].set_title("ln IASI prior")
-    axes[1, 0].set_xlabel("ln ppm")
-    axes[1, 0].set_ylabel("Height level")
-    axes[1, 0].set_xlim(-6.5, -1)
-
-    axes[1, 1].plot(np.log(new_prior), y)
-    axes[1, 1].set_title("ln GOSAT prior")
-    axes[1, 1].set_xlabel("ln ppm")
-    axes[1, 1].set_ylabel("Height level")
-    axes[1, 1].set_xlim(-6.5, -1)
-
-    axes[1, 2].plot(np.log(new_prior) - np.log(old_prior), y)
-    axes[1, 2].set_title("Diff prior ln GOSAT - ln IASI")
-    axes[1, 2].set_xlabel("ln ppm")
-    plt.tight_layout()
+    # fig, axes = plt.subplots(2, 3, figsize=(10, 8), sharex=False, sharey=True)
+    # y = pre_lvl[:]
+    #
+    # axes[0, 0].invert_yaxis()
+    #
+    # axes[0, 0].plot(old_prior, y)
+    # axes[0, 0].set_title("IASI prior")
+    # axes[0, 0].set_xlabel("ppm")
+    # axes[0, 0].set_ylabel("Height level")
+    # axes[0, 0].set_xlim(0, 0.35)
+    #
+    # axes[0, 1].scatter(new_prior, y)
+    # axes[0, 1].set_title("GOSAT prior")
+    # axes[0, 1].set_xlabel("ppm")
+    # axes[0, 1].set_xlim(0, 0.35)
+    # axes[0, 1].scatter(old_prior[np.where(deltas[19, :] == 1)[0][1:]], y[np.where(deltas[19, :] == 1)[0][1:]], color='red')
+    #
+    # axes[0, 2].plot(new_prior - old_prior, y)
+    # axes[0, 2].set_title("Diff prior GOSAT - IASI")
+    # axes[0, 2].set_xlabel("ppm")
+    #
+    # axes[1, 0].plot(np.log(old_prior), y)
+    # axes[1, 0].set_title("ln IASI prior")
+    # axes[1, 0].set_xlabel("ln ppm")
+    # axes[1, 0].set_ylabel("Height level")
+    # axes[1, 0].set_xlim(-6.5, -1)
+    #
+    # axes[1, 1].plot(np.log(new_prior), y)
+    # axes[1, 1].set_title("ln GOSAT prior")
+    # axes[1, 1].set_xlabel("ln ppm")
+    # axes[1, 1].set_ylabel("Height level")
+    # axes[1, 1].set_xlim(-6.5, -1)
+    #
+    # axes[1, 2].plot(np.log(new_prior) - np.log(old_prior), y)
+    # axes[1, 2].set_title("Diff prior ln GOSAT - ln IASI")
+    # axes[1, 2].set_xlabel("ln ppm")
+    # plt.tight_layout()
 
     # plotting avk
-    fig, axes = plt.subplots(1, 3, figsize=(10, 5), sharex=True, sharey=True)
+    fig, axes = plt.subplots(2, 3, figsize=(10, 10), sharex=True, sharey=False)
 
-    y = [i for i in range(avk.shape[0])]
-    x0 = np.diagonal(avk)[::-1]
+    y_lev = [i for i in range(avk.shape[0])]
+    y_alt = alt_lev[:]
 
     max_row = np.unravel_index(np.argmax(avk), avk.shape)[0]
     max_col = np.unravel_index(np.argmax(avk), avk.shape)[1]
 
-    axes[0].plot(x0, y)
-    axes[0].set_title("AVK diag")
-    axes[0].set_xlabel("AVK")
-    axes[0].set_ylabel("Height level")
-    axes[0].legend()
-
     for i in range(avk.shape[0]):
-        x1 = avk[:, i][::-1]
+        x0_0 = avk[:, i][::-1]
 
         if i == max_col:
-            axes[1].plot(x1, y, label=f'height level: {i}')
+            axes[0, 0].plot(x0_0, y_lev, label=f'height level: {avk.shape[0] - 1 - i} {alt_lev[::-1][i]}')
         else:
-            axes[1].plot(x1, y)
-        axes[1].set_title(f"AVK cols height levels {avk.shape[0]}")
-        axes[1].set_xlabel("AVK")
-        axes[1].legend()
+            axes[0, 0].plot(x0_0, y_lev)
+    axes[0, 0].set_title(f"AVK cols height levels {avk.shape[0]}")
+    axes[0, 0].set_xlabel("AVK")
+    axes[0, 0].legend()
 
     for i in range(avk.shape[0]):
-        x2 = avk[i, :][::-1]
+        x0_1 = avk[:, i][::-1]
+
+        if i == max_col:
+            axes[0, 1].plot(x0_1, y_alt, label=f'height level: {avk.shape[0] - 1 - i} {alt_lev[::-1][i]}')
+        else:
+            axes[0, 1].plot(x0_1, y_alt)
+    axes[0, 1].set_title(f"AVK cols altitude levels {avk.shape[0]}")
+    axes[0, 1].set_xlabel("AVK")
+    axes[0, 1].legend()
+
+    for i in range(avk.shape[0] - 8, avk.shape[0] - 3):
+        x0_2 = avk[:, i][::-1]
+
+        axes[0, 2].plot(x0_2, y_alt, label=f'height level: {avk.shape[0] - 1 - i}')
+
+    axes[0, 2].set_title(f"AVK cols height levels {avk.shape[0]}")
+    axes[0, 2].set_xlabel("AVK")
+    axes[0, 2].legend()
+
+    for i in range(avk.shape[0]):
+        x1_0 = avk[i, :][::-1]
 
         if i == max_row:
-            axes[2].plot(x2, y, label=f'height level: {i}')
+            axes[1, 0].plot(x1_0, y_lev, label=f'height level: {avk.shape[0] - 1 - i} {alt_lev[::-1][i]}')
         else:
-            axes[2].plot(x2, y)
-        axes[2].set_title(f"AVK rows height levels {avk.shape[0]}")
-        axes[2].set_xlabel("AVK")
-        axes[2].legend()
+            axes[1, 0].plot(x1_0, y_lev)
+        axes[1, 0].set_title(f"AVK rows height levels {avk.shape[0]}")
+        axes[1, 0].set_xlabel("AVK")
+        axes[1, 0].legend()
+
+    for i in range(avk.shape[0]):
+        x1_1 = avk[i, :][::-1]
+
+        if i == max_row:
+            axes[1, 1].plot(x1_1, y_alt, label=f'height level: {avk.shape[0] - 1 - i} {alt_lev[::-1][i]}')
+        else:
+            axes[1, 1].plot(x1_1, y_alt)
+        axes[1, 1].set_title(f"AVK rows height levels {avk.shape[0]}")
+        axes[1, 1].set_xlabel("AVK")
+        axes[1, 1].legend()
+
+    for i in range(avk.shape[0] - 8, avk.shape[0] - 3):
+        x1_2 = avk[i, :][::-1]
+
+        axes[1, 2].plot(x1_2, y_alt, label=f'height level: {avk.shape[0] - 1 - i}')
+
+    axes[1, 2].set_title(f"AVK cols height levels {avk.shape[0]}")
+    axes[1, 2].set_xlabel("AVK")
+    axes[1, 2].legend()
 
     plt.tight_layout()
     plt.show()
+
+    breakpoint()
+
 
     # print(n2o_prof)
     # print(gosat_pre_lay)
@@ -229,8 +249,6 @@ def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev, old_pri
     # plt.scatter(n2o_gosat_lay, pre_lay)
     # plt.show()
 
-    breakpoint()
-
 
 def calc_avk(avk_dict):
 
@@ -239,6 +257,12 @@ def calc_avk(avk_dict):
     eig_val = avk_dict['avk_val'][:rank]
     lvec = avk_dict['avk_lvec'][:rank, :num_lev].T
     rvec = avk_dict['avk_rvec'][:rank, :num_lev].T
+
+    print('num_lev: ', num_lev)
+    print('rank: ', rank)
+    print('eig_val shape: ', eig_val.shape)
+    print('lvec shape: ', lvec.shape)
+    print('rvec shape: ', rvec.shape)
 
     rxr_val = np.diag(eig_val)
     avk = np.dot(np.dot(lvec, rxr_val), rvec.T)
