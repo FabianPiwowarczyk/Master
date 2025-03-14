@@ -39,26 +39,6 @@ def printvar(var_name):
         print("Dimensions:", variable.dimensions)
 
 #printvar('musica_fit_quality_flag')
-#printvar('musica_nol')
-#printvar('musica_ghg_apriori')
-#printvar('musica_ghg_avk_rank')
-#printvar('musica_ghg_avk_val')
-#printvar('musica_ghg_avk_lvec')
-#printvar('musica_ghg_avk_rvec')
-
-# data = IASI.read_iasi('data/IASIA_MUSICA_030300_L2_AllTargetProducts_20200101000557_68496.nc')
-
-# rank = int(dataset.variables['musica_ghg_avk_rank'][0])
-# eig_val = dataset.variables['musica_ghg_avk_val'][0][:rank]
-#
-# lvec = dataset.variables['musica_ghg_avk_lvec'][0][0][:rank][:].T
-# rvec = dataset.variables['musica_ghg_avk_rvec'][0][0][:rank][:].T
-#
-# rxr_val = np.diag(eig_val)
-#
-# avk = np.dot(np.dot(lvec, rxr_val), rvec.T)
-
-#print(avk)
 
 
 from convert_func import convert
@@ -66,31 +46,4 @@ convert()
 
 import gridding
 #gridding.replot_all()
-
-
-# xn2o = 330.e-3  # ppm
-# n2o_prof = np.array([0.31999999,
-#                      0.31999999,
-#                      0.31999999,
-#                      0.31999999,
-#                      0.31999999,
-#                      0.31999999,
-#                      0.31999999,
-#                      0.31999999,
-#                      0.31999999,
-#                      0.31999999,
-#                      0.31999999,
-#                      0.31999999,
-#                      0.31999999,
-#                      0.31967527,
-#                      0.31827208,
-#                      0.31372729,
-#                      0.30633333,
-#                      0.29544127,
-#                      0.26624754,
-#                      0.17457867])
-#
-# n2o_prof = xn2o * n2o_prof / np.mean(n2o_prof)
-#
-# print(n2o_prof)
 

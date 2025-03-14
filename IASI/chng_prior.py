@@ -4,12 +4,9 @@ from dask.dot import label
 from scipy.optimize import curve_fit
 
 
-def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev, old_prior):
+def change_prior(dry_col, pre_lvl, avk_dict, alt_lev, old_prior, gas_lay):
 
     avk = calc_avk(avk_dict=avk_dict)
-
-
-
 
     xn2o = 330.e-3  # ppm
     n2o_prof = np.array([0.31999999,
@@ -55,9 +52,6 @@ def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev, old_pri
     gosat_pre_lay = np.zeros_like(gosat_pre_lev[:-1])
     for i in range(len(gosat_pre_lay)):
         gosat_pre_lay[i] = (gosat_pre_lev[i] + gosat_pre_lev[i+1]) / 2
-
-    # plt.plot(n_lay, gosat_pre_lay[:-1])
-    # plt.scatter(cum_sum_par, pre_lay)
 
     # cal weights for weighted average
     deltas = np.zeros((len(gosat_pre_lay), len(pre_lay)))
@@ -107,61 +101,155 @@ def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev, old_pri
     cor_fac = xn2o / total_column(n2o_gosat_lay, dry_col)
     new_prior = gosat_n2o_lev * cor_fac
 
-    # find iasi level for the start of the linear fit
-    iasi_lvl_idx = np.where(deltas[17, :] == max(deltas[17, :]))[0][0]  # iasi lay idx, most rep in gosat lay 18
-    iasi_lvl_idx += 1  # for upper level idx
+    met0_new_prior = new_prior.copy()
+    met0_cor_lev, met0_cor = calc_correction(avk, met0_new_prior, old_prior, dry_col, gas_lay)
 
+    met1_new_prior = linear_methode(deltas, new_prior.copy(), pre_lvl)
+    met1_cor_lev, met1_cor = calc_correction(avk, met1_new_prior, old_prior, dry_col, gas_lay)
+
+    met2_new_prior = ignor_top_layer(deltas, new_prior.copy(), old_prior)
+    met2_cor_lev, met2_cor = calc_correction(avk, met2_new_prior, old_prior, dry_col, gas_lay)
+
+    # plot_prior_methodes(met0=met0_new_prior, met0_cor_lev=met0_cor_lev, met0_cor=met0_cor,
+    #                     met1=met1_new_prior, met1_cor_lev=met1_cor_lev, met1_cor=met1_cor,
+    #                     met2=met2_new_prior, met2_cor_lev=met2_cor_lev, met2_cor=met2_cor,
+    #                     pre_lev=pre_lvl, old_prior=old_prior)
+
+    return met0_cor, met1_cor, met2_cor
+
+
+def calc_avk(avk_dict):
+
+    num_lev = avk_dict['num_lev']
+    rank = int(avk_dict['avk_rank'])
+    eig_val = avk_dict['avk_val'][:rank]
+    lvec = avk_dict['avk_lvec'][:rank, :num_lev].T
+    rvec = avk_dict['avk_rvec'][:rank, :num_lev].T
+
+    rxr_val = np.diag(eig_val)
+    avk = np.dot(np.dot(lvec, rxr_val), rvec.T)
+
+    return avk
+
+
+def total_column(gas_lay, dry_col):
+    """
+    compute total column (average dry air mole fraction)
+    input:
+        gas_lay : gas mixing ration in layers
+        dry_col : dry column
+    """
+
+    tc = np.sum(gas_lay * dry_col) / np.sum(dry_col)  # last dim = altitude
+
+    return tc
+
+
+def lev2lay(x_lev):
+    return (x_lev[1:] + x_lev[:-1]) / 2
+
+
+def ignor_top_layer(deltas, gosat_prior, old_prior):
+    """
+    swap all gosat prior data against the iasi prior data in the top layer
+    """
+
+    # plus 1 to account for the change from layers to levels
+    gosat_prior[np.where(deltas[19, :] == 1)[0][:]+1] = old_prior[np.where(deltas[19, :] == 1)[0][:]+1]
+
+    return gosat_prior
+
+
+def linear_methode(deltas, gosat_prior, pre_lev):
+    """
+    linear fit between 0 pressure and last valid gosat point
+    """
     gosat_last_idx = np.where(deltas[19, :] == 1)[0][0]
-    gosat_last_idx += 1  # for upper level idx
+    slope = gosat_prior[gosat_last_idx] / pre_lev[gosat_last_idx]
+    gosat_prior[gosat_last_idx+1:] = slope * pre_lev[gosat_last_idx+1:]
 
-    new_prior[np.where(deltas[19, :] == 1)[0][1:]] = old_prior[np.where(deltas[19, :] == 1)[0][1:]]
+    return gosat_prior
 
-    tc_cor = np.matmul((np.eye(avk.shape[0]) - avk), (np.log(new_prior[::-1]) - np.log(old_prior[::-1])).T)
-    print(tc_cor[::-1])
-    tc_cor_lay = lev2lay(np.exp(tc_cor[::-1]))
-    print(tc_cor_lay)
-    print(tc, total_column(tc_cor_lay, dry_col))
+
+def calc_correction(avk, new_prior, old_prior, dry_col, gas_lay):
+
+    tc_cor_lev = np.matmul((np.eye(avk.shape[0]) - avk), (np.log(new_prior[::-1]) - np.log(old_prior[::-1])).T)
+    tc_cor_lay = np.exp(lev2lay(tc_cor_lev[::-1]))
+
+    tc_cor = total_column_correction(gas_lay, dry_col, tc_cor_lay)
+
+    if 0.2 >= tc_cor >= 0.5:
+        print('tc is out of bounds: ', tc_cor)
+
+    return tc_cor_lev[::-1], tc_cor
+
+
+def total_column_correction(gas_lay, dry_col, tc_cor_lay):
+    tc = np.sum(gas_lay * tc_cor_lay * dry_col) / np.sum(dry_col)  # last dim = altitude
+    return tc
+
+
+def plot_prior_methodes(met0, met0_cor_lev, met0_cor,
+                        met1, met1_cor_lev, met1_cor,
+                        met2, met2_cor_lev, met2_cor,
+                        pre_lev, old_prior):
 
     # plotting priors
-    # fig, axes = plt.subplots(2, 3, figsize=(10, 8), sharex=False, sharey=True)
-    # y = pre_lvl[:]
-    #
-    # axes[0, 0].invert_yaxis()
-    #
-    # axes[0, 0].plot(old_prior, y)
-    # axes[0, 0].set_title("IASI prior")
-    # axes[0, 0].set_xlabel("ppm")
-    # axes[0, 0].set_ylabel("Height level")
-    # axes[0, 0].set_xlim(0, 0.35)
-    #
-    # axes[0, 1].scatter(new_prior, y)
-    # axes[0, 1].set_title("GOSAT prior")
-    # axes[0, 1].set_xlabel("ppm")
-    # axes[0, 1].set_xlim(0, 0.35)
-    # axes[0, 1].scatter(old_prior[np.where(deltas[19, :] == 1)[0][1:]], y[np.where(deltas[19, :] == 1)[0][1:]], color='red')
-    #
-    # axes[0, 2].plot(new_prior - old_prior, y)
-    # axes[0, 2].set_title("Diff prior GOSAT - IASI")
-    # axes[0, 2].set_xlabel("ppm")
-    #
-    # axes[1, 0].plot(np.log(old_prior), y)
-    # axes[1, 0].set_title("ln IASI prior")
-    # axes[1, 0].set_xlabel("ln ppm")
-    # axes[1, 0].set_ylabel("Height level")
-    # axes[1, 0].set_xlim(-6.5, -1)
-    #
-    # axes[1, 1].plot(np.log(new_prior), y)
-    # axes[1, 1].set_title("ln GOSAT prior")
-    # axes[1, 1].set_xlabel("ln ppm")
-    # axes[1, 1].set_ylabel("Height level")
-    # axes[1, 1].set_xlim(-6.5, -1)
-    #
-    # axes[1, 2].plot(np.log(new_prior) - np.log(old_prior), y)
-    # axes[1, 2].set_title("Diff prior ln GOSAT - ln IASI")
-    # axes[1, 2].set_xlabel("ln ppm")
-    # plt.tight_layout()
+    fig, axes = plt.subplots(3, 3, figsize=(10, 10), sharex=False, sharey=True)
+    y = [i for i in range(len(pre_lev))]
+    #y = pre_lev[:]
 
-    # plotting avk
+    #axes[0, 0].invert_yaxis()
+
+    axes[0, 0].scatter(met0, y)
+    axes[0, 0].set_title("GOSAT prior pure")
+    axes[0, 0].set_xlabel("ppm")
+    axes[0, 0].set_ylabel("Height level")
+    axes[0, 0].set_xlim(0, 0.35)
+
+    axes[0, 1].scatter(met0-old_prior, y)
+    axes[0, 1].set_title("New - Old")
+    axes[0, 1].set_xlabel("ppm")
+
+    axes[0, 2].scatter(met0_cor_lev, y, label=f'{met0_cor}')
+    axes[0, 2].set_title("Methode 0 cor")
+    axes[0, 2].set_xlabel("factor")
+    axes[0, 2].legend()
+
+    axes[1, 0].scatter(met1, y)
+    axes[1, 0].set_title("GOSAT prior linear")
+    axes[1, 0].set_xlabel("ppm")
+    axes[1, 0].set_ylabel("Height level")
+    axes[1, 0].set_xlim(0, 0.35)
+
+    axes[1, 1].scatter(met1 - old_prior, y)
+    axes[1, 1].set_title("New - Old")
+    axes[1, 1].set_xlabel("ppm")
+
+    axes[1, 2].scatter(met1_cor_lev, y, label=f'{met1_cor}')
+    axes[1, 2].set_title("Methode 1 cor")
+    axes[1, 2].set_xlabel("factor")
+    axes[1, 2].legend()
+
+    axes[2, 0].scatter(met2, y)
+    axes[2, 0].set_title("GOSAT prior ignore")
+    axes[2, 0].set_xlabel("ppm")
+    axes[2, 0].set_ylabel("Height level")
+    axes[2, 0].set_xlim(0, 0.35)
+
+    axes[2, 1].scatter(met2 - old_prior, y)
+    axes[2, 1].set_title("New - Old")
+    axes[2, 1].set_xlabel("ppm")
+
+    axes[2, 2].scatter(met2_cor_lev, y, label=f'{met2_cor}')
+    axes[2, 2].set_title("Methode 0 cor")
+    axes[2, 2].set_xlabel("factor")
+    axes[2, 2].legend()
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_avk(avk, alt_lev):
     fig, axes = plt.subplots(2, 3, figsize=(10, 10), sharex=True, sharey=False)
 
     y_lev = [i for i in range(avk.shape[0])]
@@ -234,54 +322,3 @@ def change_prior(tc, dry_col, pre_lvl, avk_dict, row, lat, lon, alt_lev, old_pri
 
     plt.tight_layout()
     plt.show()
-
-    breakpoint()
-
-
-    # print(n2o_prof)
-    # print(gosat_pre_lay)
-    #
-    # ypre = np.linspace(100, 100, 10)
-    # x = np.interp(ypre, gosat_pre_lay[::-1], n2o_prof[::-1])
-
-    # fig = plt.figure()
-    # plt.scatter(n2o_prof, gosat_pre_lay)
-    # plt.scatter(n2o_gosat_lay, pre_lay)
-    # plt.show()
-
-
-def calc_avk(avk_dict):
-
-    num_lev = avk_dict['num_lev']
-    rank = int(avk_dict['avk_rank'])
-    eig_val = avk_dict['avk_val'][:rank]
-    lvec = avk_dict['avk_lvec'][:rank, :num_lev].T
-    rvec = avk_dict['avk_rvec'][:rank, :num_lev].T
-
-    print('num_lev: ', num_lev)
-    print('rank: ', rank)
-    print('eig_val shape: ', eig_val.shape)
-    print('lvec shape: ', lvec.shape)
-    print('rvec shape: ', rvec.shape)
-
-    rxr_val = np.diag(eig_val)
-    avk = np.dot(np.dot(lvec, rxr_val), rvec.T)
-
-    return avk
-
-
-def total_column(gas_lay, dry_col):
-    """
-    compute total column (average dry air mole fraction)
-    input:
-        gas_lay : gas mixing ration in layers
-        dry_col : dry column
-    """
-
-    tc = np.sum(gas_lay * dry_col) / np.sum(dry_col)  # last dim = altitude
-
-    return tc
-
-
-def lev2lay(x_lev):
-    return (x_lev[1:] + x_lev[:-1]) / 2

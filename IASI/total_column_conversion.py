@@ -2,6 +2,7 @@ import numpy as np
 import ECMWF_Read_V3_5 as ecmwf
 from .reading import read_all_iasi
 from tqdm import tqdm
+from .chng_prior import change_prior
 
 from .conv_constants import *
 
@@ -180,17 +181,14 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
                               org_path=org_path, quality_flag=quality_flag)
 
     tot_col = np.zeros_like(iasi_data['lon'])
-    # nan_flags = np.zeros_like(iasi_data['lon'])
+    met0_tc = np.zeros_like(iasi_data['lon'])
+    met1_tc = np.zeros_like(iasi_data['lon'])
+    met2_tc = np.zeros_like(iasi_data['lon'])
 
     print('Converting data to total columns:')
     items = list(range(iasi_data['time'].shape[0]))
 
     for row in tqdm(items):
-
-        # filter a good avk
-        if not is_point_in_square(iasi_data['lon'][row], iasi_data['lat'][row]):
-            continue
-        print(iasi_data['readable_time'][row])
 
         col_avk_dict = {
         'avk_rank': iasi_data['avk_rank'][row],
@@ -227,22 +225,18 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
 
         tc = total_column(gas_lay=n2o_lay, dry_col=dry_col)
 
-        from .chng_prior import change_prior
-        change_prior(tc, dry_col, col_dic['pre_lev'], col_avk_dict, row, row_lat,
-                     iasi_data['lon'][row], col_dic['alt_lev'], col_dic['apri'])
-
-        count = 0
-        if count == 100:
-            breakpoint()
-        else:
-            count += 1
-
         tot_col[row] = tc
+
+        met0_tc[row], met1_tc[row], met2_tc[row] = change_prior(dry_col, col_dic['pre_lev'], col_avk_dict,
+                                                                col_dic['alt_lev'], col_dic['apri'], n2o_lay)
 
         if 0.2 >= tc >= 0.5:
             print('tc is out of bounds: ', tc)
 
     iasi_data['total_column'] = tot_col
+    iasi_data['tc_cor_met0'] = met0_tc
+    iasi_data['tc_cor_met1'] = met1_tc
+    iasi_data['tc_cor_met2'] = met2_tc
     print('Returning total columns.')
 
     return iasi_data

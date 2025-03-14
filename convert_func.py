@@ -15,9 +15,6 @@ def convert():
     months_paths.sort()
     months = [m.replace(data_path, '').replace('/', '') for m in months_paths]
 
-    # start in July for north hemispheric summer
-    months = months[6:]
-
     date_array = np.array([0, 0])
     for m in months:
         days_paths = [f.path for f in os.scandir(join(data_path, m)) if f.is_dir()]
@@ -29,7 +26,7 @@ def convert():
     date_tuples = date_array[1:, :]
 
     for i, date in enumerate(date_tuples):
-        out_path = f'new_finished_data/2020_{date[0]}_{date[1]}.nc'
+        out_path = f'finished_data/2020_{date[0]}_{date[1]}_qf{quality_flag}.nc'
         if os.path.exists(out_path):
             print('File: ', out_path, ' already exists.')
         else:
@@ -48,7 +45,10 @@ def convert():
                 'h2o_lev_dry': "water vapor, dry air mole fraction (ppmv).",
                 'tem_lev': "atmospheric temperatures.",
                 'total_column': "total column in ppm.",
-                'alt_lev': "Altitude levels in meters above sea level."
+                'alt_lev': "Altitude levels in meters above sea level.",
+                'tc_cor_met0': "Corrected total column with gosat apriori.",
+                'tc_cor_met1': "Corrected total column with gosat apriori and linear aprox.",
+                'tc_cor_met2': "Corrected total column with gosat apriori top Iasi."
             }
 
             for key in [el for el in data.keys()]:
