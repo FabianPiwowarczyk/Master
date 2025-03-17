@@ -22,8 +22,12 @@ def find_cen(value, centers, res):
             return center
 
 
-def read_df(dir_path, m, tot_var, lon_var, lat_var, sat):
-    paths = glob2.glob(dir_path + m + '*.nc')
+def read_df(dir_path, m, tot_var, lon_var, lat_var, sat, qf=None):
+
+    if sat == 'iasi':
+        paths = glob2.glob(dir_path + m + f'*qf{qf}.nc')
+    else:
+        paths = glob2.glob(dir_path + m + '*.nc')
     paths.sort()
 
     tot_col_list = []
@@ -79,14 +83,17 @@ def grid(df, lon_cen, x_res, lat_cen, y_res, th):
     return df_filled
 
 
-def monthly_mean(x_res, y_res, th, dir_path, tot_var, lon_var, lat_var, sat):
+def monthly_mean(x_res, y_res, th, dir_path, tot_var, lon_var, lat_var, sat, qf=None):
 
     months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
 
     lon_cen, lat_cen = grid_centers(x_res=x_res, y_res=y_res)
 
     for m in months:
-        df = read_df(dir_path, m, tot_var, lon_var, lat_var, sat)
+        if sat == 'iasi':
+            df = read_df(dir_path, m, tot_var, lon_var, lat_var, sat, qf)
+        else:
+            df = read_df(dir_path, m, tot_var, lon_var, lat_var, sat)
         df_filled = grid(df, lon_cen, x_res, lat_cen, y_res, th)
 
         # saving the data
@@ -115,5 +122,11 @@ def monthly_mean(x_res, y_res, th, dir_path, tot_var, lon_var, lat_var, sat):
             )
 
         print(f'Saving {m}')
-        output_path = f'monthly_means/{sat}_{m}_{x_res}x{y_res}_th{th}.nc'
+        if sat == 'iasi':
+            if tot_var in ['tc_cor_met0', 'tc_cor_met1', 'tc_cor_met2']:
+                output_path = f'monthly_means/{sat}_met{tot_var[-1]}_{m}_{x_res}x{y_res}_th{th}_qf{qf}.nc'
+            else:
+                output_path = f'monthly_means/{sat}_{m}_{x_res}x{y_res}_th{th}_qf{qf}.nc'
+        else:
+            output_path = f'monthly_means/{sat}_{m}_{x_res}x{y_res}_th{th}.nc'
         ds.to_netcdf(output_path)
