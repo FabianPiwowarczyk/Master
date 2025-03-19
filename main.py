@@ -42,8 +42,9 @@ def printvar(var_name):
 
 
 from convert_func import convert
-convert()
+#convert()
 
 import gridding
+gridding.regrid_iasi()
 #gridding.replot_all()
 

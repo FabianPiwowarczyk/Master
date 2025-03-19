@@ -13,18 +13,22 @@ def bnds(cen):
     return cell_bnds
 
 
-def plot_lv3_data(x_res, y_res, th, dir_path, sat, vmin=None, vmax=None):
+def plot_lv3_data(x_res, y_res, th, dir_path, sat, var='mean_tot', vmin=None, vmax=None, qf=None, met=None):
 
     months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
 
     for m in months:
-        ds = xr.open_dataset(dir_path.format(m, x_res, y_res, th))
+        if sat == 'iasi':
+            if met:
+                ds = xr.open_dataset(dir_path.format(sat, met, m, x_res, y_res, th, qf))
+            else:
+                ds = xr.open_dataset(dir_path.format(sat, m, x_res, y_res, th, qf))
+        else:
+            ds = xr.open_dataset(dir_path.format(sat, m, x_res, y_res, th))
 
         lon = ds['lon_cen'].values
         lat = ds['lat_cen'].values
-        tot_col = ds['mean_tot'].values
-        count = ds['count'].values
-        std = ds['std_tot'].values
+        plot_var = ds[var].values
 
         lon_bnds = bnds(lon)
         lat_bnds = bnds(lat)
@@ -43,29 +47,43 @@ def plot_lv3_data(x_res, y_res, th, dir_path, sat, vmin=None, vmax=None):
         gl.xlabel_style = {'size': 10, 'color': 'black'}
         gl.ylabel_style = {'size': 10, 'color': 'black'}
 
-        plt.pcolormesh(lon_bnds, lat_bnds, tot_col, transform=ccrs.PlateCarree(), cmap='jet'
+        plt.pcolormesh(lon_bnds, lat_bnds, plot_var, transform=ccrs.PlateCarree(), cmap='jet'
                        , vmin=vmin, vmax=vmax)
 
         plt.colorbar(label=r'$\mathrm{xN}_2\mathrm{O}$ in ppb')
-        plt.title(f'{sat} {x_res}x{y_res} gridded data 2020-{m}')
+        if met:
+            plt.title(f'{sat} {x_res}x{y_res} {var} met{met} 2020-{m}')
+        else:
+            plt.title(f'{sat} {x_res}x{y_res} {var} 2020-{m}')
 
-        outpath = f'pictures/{sat}_{x_res}x{y_res}_{m}.png'
+        if sat == 'iasi':
+            if met:
+                outpath = f'pictures/{sat}_{var}_met{met}_{x_res}x{y_res}_qf{qf}_{m}.png'
+            else:
+                outpath = f'pictures/{sat}_{var}_{x_res}x{y_res}_qf{qf}_{m}.png'
+        else:
+            outpath = f'pictures/{sat}_{var}_{x_res}x{y_res}_{m}.png'
         plt.savefig(outpath)
 
 
-def combined_plot(x_res, y_res, th, dir_path, var, vmin=None, vmax=None):
+def combined_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
+                  met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0):
 
     months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
 
     for m in months:
-        ds_iasi = xr.open_dataset(dir_path.format('iasi', m, x_res, y_res, th))
+        ds_iasi = xr.open_dataset(dir_path.format('iasi', m, x_res, y_res, th, qf))
+        ds_met = xr.open_dataset(met_path.format('iasi', met, m, x_res, y_res, th, qf))
         ds_gosat = xr.open_dataset(dir_path.format('gosat', m, x_res, y_res, th))
 
         lon_iasi = ds_iasi['lon_cen'].values
         lat_iasi = ds_iasi['lat_cen'].values
         variable_iasi = ds_iasi[var].values
-
+        variable_met = ds_met[var].values
         variable_gosat = ds_gosat[var].values
+
+        var1 = variable_iasi - variable_gosat
+        var2 = variable_met - variable_gosat
 
         lon_bnds = bnds(lon_iasi)
         lat_bnds = bnds(lat_iasi)
@@ -85,12 +103,12 @@ def combined_plot(x_res, y_res, th, dir_path, var, vmin=None, vmax=None):
         gl1.xlabel_style = {'size': 10, 'color': 'black'}
         gl1.ylabel_style = {'size': 10, 'color': 'black'}
 
-        # Plot the tot_col variable for IASI
-        iasi_plot = ax1.pcolormesh(lon_bnds, lat_bnds, variable_iasi, transform=ccrs.PlateCarree(), cmap='jet',
+        # Plot the tot_col variable for IASI - GOSAT
+        iasi_plot = ax1.pcolormesh(lon_bnds, lat_bnds, var1, transform=ccrs.PlateCarree(), cmap='seismic',
                                    vmin=vmin, vmax=vmax)
-        ax1.set_title(f'IASI {x_res}x{y_res} grid 2020-{m}')
+        ax1.set_title(f'IASI - GOSAT {x_res}x{y_res} grid 2020-{m}')
 
-        # ---------------- Plot 2: gosat ----------------
+        # ---------------- Plot 2: methode --------------
         ax2.coastlines()
         ax2.add_feature(cfeature.BORDERS)
         ax2.add_feature(cfeature.LAND, facecolor='white')
@@ -102,21 +120,110 @@ def combined_plot(x_res, y_res, th, dir_path, var, vmin=None, vmax=None):
         gl2.xlabel_style = {'size': 10, 'color': 'black'}
         gl2.ylabel_style = {'size': 10, 'color': 'black'}
 
-        # Plot the count variable for GOSAT
-        gosat_plot = ax2.pcolormesh(lon_bnds, lat_bnds, variable_gosat, transform=ccrs.PlateCarree(), cmap='jet',
+        # Plot the count variable for IASI MET0 - GOSAT
+        gosat_plot = ax2.pcolormesh(lon_bnds, lat_bnds, var2, transform=ccrs.PlateCarree(), cmap='seismic',
                                     vmin=vmin, vmax=vmax)
-        ax2.set_title(f'GOSAT {x_res}x{y_res} grid 2020-{m}')
+        ax2.set_title(f'Cor met{met} IASI - GOSAT {x_res}x{y_res} grid 2020-{m}')
 
         # ---------------- Shared Colorbar ----------------
         # Create a shared colorbar for both subplots
         cbar = fig.colorbar(iasi_plot, ax=[ax1, ax2], orientation='vertical', fraction=0.02, pad=0.04)
         cbar.set_label(r'$\mathrm{xN}_2\mathrm{O}$ in ppb')
 
-        outpath = f'pictures/combined_{x_res}x{y_res}_{m}.png'
+        outpath = f'pictures/combined_met{met}_{x_res}x{y_res}_{m}.png'
+        plt.savefig(outpath)
+
+
+def iasi_dif_plot(x_res, y_res, th, dir_path, qf, vmin=None, vmax=None,
+                  met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc'):
+
+    months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
+
+    for m in months:
+        ds_iasi = xr.open_dataset(dir_path.format('iasi', m, x_res, y_res, th, qf))
+        ds_met0 = xr.open_dataset(met_path.format('iasi', '0', m, x_res, y_res, th, qf))
+        ds_met1 = xr.open_dataset(met_path.format('iasi', '1', m, x_res, y_res, th, qf))
+        ds_met2 = xr.open_dataset(met_path.format('iasi', '2', m, x_res, y_res, th, qf))
+
+        lon_iasi = ds_iasi['lon_cen'].values
+        lat_iasi = ds_iasi['lat_cen'].values
+        variable_iasi = ds_iasi['mean_tot'].values
+        variable_met0 = ds_met0['mean_tot'].values
+        variable_met1 = ds_met1['mean_tot'].values
+        variable_met2 = ds_met2['mean_tot'].values
+
+        var0 = variable_iasi - variable_met0
+        var1 = variable_iasi - variable_met1
+        var2 = variable_iasi - variable_met2
+
+        lon_bnds = bnds(lon_iasi)
+        lat_bnds = bnds(lat_iasi)
+
+        # Create a figure with two subplots side by side
+        fig, axs = plt.subplots(2, 2, figsize=(18, 12), subplot_kw={'projection': ccrs.PlateCarree()})
+
+        # ---------------- Plot 0: Met 0 ----------------
+        axs[0, 0].coastlines()
+        axs[0, 0].add_feature(cfeature.BORDERS)
+        axs[0, 0].add_feature(cfeature.LAND, facecolor='white')
+        axs[0, 0].add_feature(cfeature.OCEAN, facecolor='white')
+
+        # Add gridlines and set latitude/longitude labels
+        gl0 = axs[0, 0].gridlines(draw_labels=True, linestyle='--', color='gray')
+        gl0.top_labels = gl0.right_labels = False
+        gl0.xlabel_style = {'size': 10, 'color': 'black'}
+        gl0.ylabel_style = {'size': 10, 'color': 'black'}
+
+        # Plot
+        plot0 = axs[0, 0].pcolormesh(lon_bnds, lat_bnds, var0, transform=ccrs.PlateCarree(), cmap='jet',
+                                   vmin=vmin, vmax=vmax)
+        axs[0, 0].set_title(f'IASI - MET 0 {x_res}x{y_res} grid 2020-{m}')
+
+        # ---------------- Plot 1: Met 1 ----------------
+        axs[0, 1].coastlines()
+        axs[0, 1].add_feature(cfeature.BORDERS)
+        axs[0, 1].add_feature(cfeature.LAND, facecolor='white')
+        axs[0, 1].add_feature(cfeature.OCEAN, facecolor='white')
+
+        # Add gridlines and set latitude/longitude labels
+        gl1 = axs[0, 1].gridlines(draw_labels=True, linestyle='--', color='gray')
+        gl1.top_labels = gl1.right_labels = False
+        gl1.xlabel_style = {'size': 10, 'color': 'black'}
+        gl1.ylabel_style = {'size': 10, 'color': 'black'}
+
+        # Plot
+        plot1 = axs[0, 1].pcolormesh(lon_bnds, lat_bnds, var1, transform=ccrs.PlateCarree(), cmap='jet',
+                                   vmin=vmin, vmax=vmax)
+        axs[0, 1].set_title(f'IASI - MET 1 {x_res}x{y_res} grid 2020-{m}')
+
+        # ---------------- Plot 2: Met 2 ----------------
+        axs[1, 0].coastlines()
+        axs[1, 0].add_feature(cfeature.BORDERS)
+        axs[1, 0].add_feature(cfeature.LAND, facecolor='white')
+        axs[1, 0].add_feature(cfeature.OCEAN, facecolor='white')
+
+        # Add gridlines and set latitude/longitude labels
+        gl2 = axs[1, 0].gridlines(draw_labels=True, linestyle='--', color='gray')
+        gl2.top_labels = gl2.right_labels = False
+        gl2.xlabel_style = {'size': 10, 'color': 'black'}
+        gl2.ylabel_style = {'size': 10, 'color': 'black'}
+
+        # Plot
+        plot2 = axs[1, 0].pcolormesh(lon_bnds, lat_bnds, var2, transform=ccrs.PlateCarree(), cmap='jet',
+                                   vmin=vmin, vmax=vmax)
+        axs[1, 0].set_title(f'IASI - MET 2 {x_res}x{y_res} grid 2020-{m}')
+
+        # ---------------- Shared Colorbar ----------------
+        # Create a shared colorbar for both subplots
+        cbar = fig.colorbar(plot0, ax=axs, orientation='vertical', fraction=0.02, pad=0.04)
+        cbar.set_label(r'$\mathrm{xN}_2\mathrm{O}$ in ppb')
+
+        outpath = f'pictures/iasi_dif_{x_res}x{y_res}_{m}.png'
         plt.savefig(outpath)
 
 
 def plot_dif(x_res, y_res, th, dir_path, vmin=None, vmax=None):
+    """Not yet updated for newer data format"""
 
     months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
 
