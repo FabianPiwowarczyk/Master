@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import numpy as np
+import matplotlib.colors as mcolors
 
 
 def bnds(cen):
@@ -19,7 +20,7 @@ def plot_lv3_data(x_res, y_res, th, dir_path, sat, var='mean_tot', vmin=None, vm
 
     for m in months:
         if sat == 'iasi':
-            if met:
+            if met in [0, 1, 2]:
                 ds = xr.open_dataset(dir_path.format(sat, met, m, x_res, y_res, th, qf))
             else:
                 ds = xr.open_dataset(dir_path.format(sat, m, x_res, y_res, th, qf))
@@ -51,13 +52,13 @@ def plot_lv3_data(x_res, y_res, th, dir_path, sat, var='mean_tot', vmin=None, vm
                        , vmin=vmin, vmax=vmax)
 
         plt.colorbar(label=r'$\mathrm{xN}_2\mathrm{O}$ in ppb')
-        if met:
+        if met in [0, 1, 2]:
             plt.title(f'{sat} {x_res}x{y_res} {var} met{met} 2020-{m}')
         else:
             plt.title(f'{sat} {x_res}x{y_res} {var} 2020-{m}')
 
         if sat == 'iasi':
-            if met:
+            if met in [0, 1, 2]:
                 outpath = f'pictures/{sat}_{var}_met{met}_{x_res}x{y_res}_qf{qf}_{m}.png'
             else:
                 outpath = f'pictures/{sat}_{var}_{x_res}x{y_res}_qf{qf}_{m}.png'
@@ -71,10 +72,14 @@ def combined_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
 
     months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
 
+    norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)  # norm for colorbar
+
     for m in months:
         ds_iasi = xr.open_dataset(dir_path.format('iasi', m, x_res, y_res, th, qf))
         ds_met = xr.open_dataset(met_path.format('iasi', met, m, x_res, y_res, th, qf))
-        ds_gosat = xr.open_dataset(dir_path.format('gosat', m, x_res, y_res, th))
+
+        gosat_path = 'monthly_means/{}_{}_{}x{}_th{}.nc'
+        ds_gosat = xr.open_dataset(gosat_path.format('gosat', m, x_res, y_res, th))
 
         lon_iasi = ds_iasi['lon_cen'].values
         lat_iasi = ds_iasi['lat_cen'].values
@@ -105,7 +110,7 @@ def combined_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
 
         # Plot the tot_col variable for IASI - GOSAT
         iasi_plot = ax1.pcolormesh(lon_bnds, lat_bnds, var1, transform=ccrs.PlateCarree(), cmap='seismic',
-                                   vmin=vmin, vmax=vmax)
+                                   vmin=vmin, vmax=vmax, norm=norm)
         ax1.set_title(f'IASI - GOSAT {x_res}x{y_res} grid 2020-{m}')
 
         # ---------------- Plot 2: methode --------------
@@ -122,7 +127,7 @@ def combined_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
 
         # Plot the count variable for IASI MET0 - GOSAT
         gosat_plot = ax2.pcolormesh(lon_bnds, lat_bnds, var2, transform=ccrs.PlateCarree(), cmap='seismic',
-                                    vmin=vmin, vmax=vmax)
+                                    vmin=vmin, vmax=vmax, norm=norm)
         ax2.set_title(f'Cor met{met} IASI - GOSAT {x_res}x{y_res} grid 2020-{m}')
 
         # ---------------- Shared Colorbar ----------------

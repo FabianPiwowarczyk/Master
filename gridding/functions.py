@@ -32,13 +32,13 @@ def replot_all():
                   'monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
                   'mean_tot', 280, 340, 3, 2)
 
-    combined_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}.nc',
+    combined_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
                   'mean_tot', 3, vmin=None, vmax=None,
                   met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0)
-    combined_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}.nc',
+    combined_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
                   'mean_tot', 3, vmin=None, vmax=None,
                   met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=1)
-    combined_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}.nc',
+    combined_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
                   'mean_tot', 3, vmin=None, vmax=None,
                   met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=2)
 
