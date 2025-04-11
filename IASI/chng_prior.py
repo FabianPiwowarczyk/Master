@@ -104,18 +104,18 @@ def change_prior(dry_col, pre_lvl, avk_dict, alt_lev, old_prior, gas_lay):
     met0_new_prior = new_prior.copy()
     met0_cor_lev, met0_cor = calc_correction(avk, met0_new_prior, old_prior, dry_col, gas_lay)
 
-    met1_new_prior = linear_methode(deltas, new_prior.copy(), pre_lvl)
-    met1_cor_lev, met1_cor = calc_correction(avk, met1_new_prior, old_prior, dry_col, gas_lay)
-
-    met2_new_prior = ignor_top_layer(deltas, new_prior.copy(), old_prior)
-    met2_cor_lev, met2_cor = calc_correction(avk, met2_new_prior, old_prior, dry_col, gas_lay)
+    # met1_new_prior = linear_methode(deltas, new_prior.copy(), pre_lvl)
+    # met1_cor_lev, met1_cor = calc_correction(avk, met1_new_prior, old_prior, dry_col, gas_lay)
+    #
+    # met2_new_prior = ignor_top_layer(deltas, new_prior.copy(), old_prior)
+    # met2_cor_lev, met2_cor = calc_correction(avk, met2_new_prior, old_prior, dry_col, gas_lay)
 
     # plot_prior_methodes(met0=met0_new_prior, met0_cor_lev=met0_cor_lev, met0_cor=met0_cor,
     #                     met1=met1_new_prior, met1_cor_lev=met1_cor_lev, met1_cor=met1_cor,
     #                     met2=met2_new_prior, met2_cor_lev=met2_cor_lev, met2_cor=met2_cor,
     #                     pre_lev=pre_lvl, old_prior=old_prior)
 
-    return met0_cor, met1_cor, met2_cor
+    return met0_cor #, met1_cor, met2_cor
 
 
 def calc_avk(avk_dict):

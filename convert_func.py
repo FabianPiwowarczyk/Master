@@ -47,8 +47,8 @@ def convert():
                 'total_column': "total column in ppm.",
                 'alt_lev': "Altitude levels in meters above sea level.",
                 'tc_cor_met0': "Corrected total column with gosat apriori.",
-                'tc_cor_met1': "Corrected total column with gosat apriori and linear aprox.",
-                'tc_cor_met2': "Corrected total column with gosat apriori top Iasi.",
+                #'tc_cor_met1': "Corrected total column with gosat apriori and linear aprox.",
+                #'tc_cor_met2': "Corrected total column with gosat apriori top Iasi.",
                 'tc_apri': 'Total column calculated form the apriori.'
             }
 
