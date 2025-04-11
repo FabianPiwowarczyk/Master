@@ -13,6 +13,15 @@ def bnds(cen):
     cell_bnds[-1] = cen[-1] + (cen[-1] - cen[-2]) / 2
     return cell_bnds
 
+def zonal_mean(var):
+    var_zonal = np.zeros((var.shape[0], 1))
+    for i in range(var.shape[0]):
+        if np.isnan(var[i, :]).all():
+            var_zonal[i] = np.nan
+        else:
+            var_zonal[i] = np.nanmean(var[i, :])
+    return var_zonal
+
 
 def plot_lv3_data(x_res, y_res, th, dir_path, sat, var='mean_tot', vmin=None, vmax=None, qf=None, met=None):
 
@@ -90,6 +99,11 @@ def combined_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         var1 = variable_iasi - variable_gosat
         var2 = variable_met - variable_gosat
 
+        mean_var1 = np.nanmean(var1)
+        std_var1 = np.nanstd(var1)
+        mean_var2 = np.nanmean(var2)
+        std_var2 = np.nanstd(var2)
+
         lon_bnds = bnds(lon_iasi)
         lat_bnds = bnds(lat_iasi)
 
@@ -111,7 +125,7 @@ def combined_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         # Plot the tot_col variable for IASI - GOSAT
         iasi_plot = ax1.pcolormesh(lon_bnds, lat_bnds, var1, transform=ccrs.PlateCarree(), cmap='seismic',
                                    vmin=vmin, vmax=vmax, norm=norm)
-        ax1.set_title(f'IASI - GOSAT {x_res}x{y_res} grid 2020-{m}')
+        ax1.set_title(f'IASI - GOSAT {x_res}x{y_res} grid 2020-{m} \n {mean_var1:.2f} \u00B1 {std_var1:.2f}')
 
         # ---------------- Plot 2: methode --------------
         ax2.coastlines()
@@ -128,7 +142,7 @@ def combined_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         # Plot the count variable for IASI MET0 - GOSAT
         gosat_plot = ax2.pcolormesh(lon_bnds, lat_bnds, var2, transform=ccrs.PlateCarree(), cmap='seismic',
                                     vmin=vmin, vmax=vmax, norm=norm)
-        ax2.set_title(f'Cor met{met} IASI - GOSAT {x_res}x{y_res} grid 2020-{m}')
+        ax2.set_title(f'Cor met{met} IASI - GOSAT {x_res}x{y_res} grid 2020-{m} \n {mean_var2:.2f} \u00B1 {std_var2:.2f}')
 
         # ---------------- Shared Colorbar ----------------
         # Create a shared colorbar for both subplots
@@ -136,6 +150,124 @@ def combined_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         cbar.set_label(r'$\mathrm{xN}_2\mathrm{O}$ in ppb')
 
         outpath = f'pictures/combined_met{met}_{x_res}x{y_res}_{m}.png'
+        plt.savefig(outpath)
+
+
+def zonal_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
+                  met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0):
+
+    months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
+
+    norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)  # norm for colorbar
+
+    for m in months:
+        ds_iasi = xr.open_dataset(dir_path.format('iasi', m, x_res, y_res, th, qf))
+        ds_met = xr.open_dataset(met_path.format('iasi', met, m, x_res, y_res, th, qf))
+
+        gosat_path = 'monthly_means/{}_{}_{}x{}_th{}.nc'
+        ds_gosat = xr.open_dataset(gosat_path.format('gosat', m, x_res, y_res, th))
+
+        lat_iasi = ds_iasi['lat_cen'].values
+
+        variable_iasi = ds_iasi[var].values
+        iasi_zonal = zonal_mean(variable_iasi)
+
+        variable_met = ds_met[var].values
+        met_zonal = zonal_mean(variable_met)
+
+        variable_gosat = ds_gosat[var].values
+
+        var1 = variable_iasi - variable_gosat
+        var1_zonal = zonal_mean(var1)
+
+        var2 = variable_met - variable_gosat
+        var2_zonal = zonal_mean(var2)
+
+        lon_bnds = [-180.0, 180.0]
+        lat_bnds = bnds(lat_iasi)
+
+        # Create a figure with two subplots side by side
+        fig, axs = plt.subplots(2, 2, figsize=(18, 6), subplot_kw={'projection': ccrs.PlateCarree()})
+
+        # ---------------- Plot 1: iasi ----------------
+        axs[0, 0].coastlines()
+        axs[0, 0].add_feature(cfeature.BORDERS)
+        axs[0, 0].add_feature(cfeature.LAND, facecolor='white')
+        axs[0, 0].add_feature(cfeature.OCEAN, facecolor='white')
+
+        # Add gridlines and set latitude/longitude labels
+        gl1 = axs[0, 0].gridlines(draw_labels=True, linestyle='--', color='gray')
+        gl1.top_labels = gl1.right_labels = False
+        gl1.xlabel_style = {'size': 10, 'color': 'black'}
+        gl1.ylabel_style = {'size': 10, 'color': 'black'}
+
+        # Plot the zonal tot_col from IASI
+        iasi_plot = axs[0, 0].pcolormesh(lon_bnds, lat_bnds, iasi_zonal, transform=ccrs.PlateCarree(), cmap='jet',
+                                   vmin=vmin, vmax=vmax)
+        axs[0,0].set_title(f'IASI zonal {x_res}x{y_res} grid 2020-{m}')
+
+        # ---------------- Plot 2: methode --------------
+        axs[0, 1].coastlines()
+        axs[0, 1].add_feature(cfeature.BORDERS)
+        axs[0, 1].add_feature(cfeature.LAND, facecolor='white')
+        axs[0, 1].add_feature(cfeature.OCEAN, facecolor='white')
+
+        # Add gridlines and set latitude/longitude labels
+        gl2 = axs[0, 1].gridlines(draw_labels=True, linestyle='--', color='gray')
+        gl2.top_labels = gl2.right_labels = False
+        gl2.xlabel_style = {'size': 10, 'color': 'black'}
+        gl2.ylabel_style = {'size': 10, 'color': 'black'}
+
+        # Plot the zonal tot_col from IASI met
+        met_plot = axs[0, 1].pcolormesh(lon_bnds, lat_bnds, met_zonal, transform=ccrs.PlateCarree(), cmap='jet',
+                                    vmin=vmin, vmax=vmax)
+        axs[0, 1].set_title(f'Met{met} IASI zonal {x_res}x{y_res} grid 2020-{m}')
+
+        # ---------------- Shared Colorbar ----------------
+        # Create a shared colorbar for both subplots
+        cbar = fig.colorbar(iasi_plot, ax=[axs[0, 0], axs[0, 1]], orientation='vertical', fraction=0.02, pad=0.04)
+        cbar.set_label(r'$\mathrm{xN}_2\mathrm{O}$ in ppb')
+
+        # ---------------- Plot 3: iasi - gosat ----------------
+        axs[1, 0].coastlines()
+        axs[1, 0].add_feature(cfeature.BORDERS)
+        axs[1, 0].add_feature(cfeature.LAND, facecolor='white')
+        axs[1, 0].add_feature(cfeature.OCEAN, facecolor='white')
+
+        # Add gridlines and set latitude/longitude labels
+        gl3 = axs[1, 0].gridlines(draw_labels=True, linestyle='--', color='gray')
+        gl3.top_labels = gl3.right_labels = False
+        gl3.xlabel_style = {'size': 10, 'color': 'black'}
+        gl3.ylabel_style = {'size': 10, 'color': 'black'}
+
+        # Plot the zonal tot_col from IASI - GOSAT
+        dif_iasi_plot = axs[1, 0].pcolormesh(lon_bnds, lat_bnds, var1_zonal, transform=ccrs.PlateCarree(),
+                                             cmap='seismic', vmin=vmin, vmax=vmax, norm=norm)
+        axs[1, 0].set_title(f'IASI - GOSAT zonal {x_res}x{y_res} grid 2020-{m}')
+
+        # ---------------- Plot 2: methode --------------
+        axs[1, 1].coastlines()
+        axs[1, 1].add_feature(cfeature.BORDERS)
+        axs[1, 1].add_feature(cfeature.LAND, facecolor='white')
+        axs[1, 1].add_feature(cfeature.OCEAN, facecolor='white')
+
+        # Add gridlines and set latitude/longitude labels
+        gl4 = axs[1, 1].gridlines(draw_labels=True, linestyle='--', color='gray')
+        gl4.top_labels = gl4.right_labels = False
+        gl4.xlabel_style = {'size': 10, 'color': 'black'}
+        gl4.ylabel_style = {'size': 10, 'color': 'black'}
+
+        # Plot the zonal tot_col from IASI met - GOSAT
+        dif_met_plot = axs[1, 1].pcolormesh(lon_bnds, lat_bnds, var2_zonal, transform=ccrs.PlateCarree(),
+                                            cmap='seismic', vmin=vmin, vmax=vmax, norm=norm)
+        axs[1, 1].set_title(f'Met{met} IASI - GOSAT zonal {x_res}x{y_res} grid 2020-{m}')
+
+        # ---------------- Shared Colorbar ----------------
+        # Create a shared colorbar for both subplots
+        cbar = fig.colorbar(dif_iasi_plot, ax=[axs[1, 0], axs[1, 1]], orientation='vertical', fraction=0.02, pad=0.04)
+        cbar.set_label(r'$\mathrm{xN}_2\mathrm{O}$ in ppb')
+
+        outpath = f'pictures/zonal_met{met}_{x_res}x{y_res}_{m}.png'
         plt.savefig(outpath)
 
 

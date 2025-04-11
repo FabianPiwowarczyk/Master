@@ -1,4 +1,4 @@
-from .plot_lv3 import plot_lv3_data, combined_plot, iasi_dif_plot
+from .plot_lv3 import plot_lv3_data, combined_plot, iasi_dif_plot, zonal_plot
 from .grid_func import monthly_mean
 
 
@@ -13,37 +13,21 @@ def replot_all():
     plot_lv3_data(1, 1, 0,
                   'monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
                   'mean_tot', 280, 340, 3, 0)
-    plot_lv3_data(1, 1, 0,
-                  'monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
-                  'mean_tot', 280, 340, 3, 1)
-    plot_lv3_data(1, 1, 0,
-                  'monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
-                  'mean_tot', 280, 340, 3, 2)
+
     plot_lv3_data(5, 5, 0,
                   'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
                   'mean_tot', 280, 340, 3)
     plot_lv3_data(5, 5, 0,
                   'monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
                   'mean_tot', 280, 340, 3, 0)
-    plot_lv3_data(5, 5, 0,
-                  'monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
-                  'mean_tot', 280, 340, 3, 1)
-    plot_lv3_data(5, 5, 0,
-                  'monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
-                  'mean_tot', 280, 340, 3, 2)
 
     combined_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
                   'mean_tot', 3, vmin=None, vmax=None,
                   met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0)
-    combined_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
-                  'mean_tot', 3, vmin=None, vmax=None,
-                  met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=1)
-    combined_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
-                  'mean_tot', 3, vmin=None, vmax=None,
-                  met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=2)
 
-    iasi_dif_plot(1, 1, 0, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
-                  3, vmin=None, vmax=None, met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc')
+    zonal_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
+                  'mean_tot', 3, vmin=None, vmax=None,
+                  met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0)
 
 
 def regrid_iasi():
