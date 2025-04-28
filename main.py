@@ -40,10 +40,10 @@ def printvar(var_name):
 #printvar('musica_fit_quality_flag')
 
 
-from convert_func import convert
-convert()
+#from convert_func import convert
+#convert()
 
 import gridding
 #gridding.regrid_iasi()
-#gridding.replot_all()
+gridding.replot_all()
 

@@ -176,6 +176,7 @@ def zonal_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         met_zonal = zonal_mean(variable_met)
 
         variable_gosat = ds_gosat[var].values
+        gosat_zonal = zonal_mean(variable_gosat)
 
         var1 = variable_iasi - variable_gosat
         var1_zonal = zonal_mean(var1)
@@ -269,6 +270,32 @@ def zonal_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
 
         outpath = f'pictures/zonal_met{met}_{x_res}x{y_res}_{m}.png'
         plt.savefig(outpath)
+
+        # Graph plot
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6))
+
+        ax1.plot(iasi_zonal, lat_iasi, color='red')
+        ax1.scatter(iasi_zonal, lat_iasi, color='red', label='True IASI')
+
+        ax1.plot(met_zonal, lat_iasi, color='cyan')
+        ax1.scatter(met_zonal, lat_iasi, color='cyan', label='Met0 IASI')
+
+        ax1.plot(gosat_zonal, lat_iasi, color='purple')
+        ax1.scatter(gosat_zonal, lat_iasi, color='purple', label='True GOSAT2')
+
+        ax1.axhline(0, color='black', linewidth=1, linestyle='--')
+
+        ax2.plot(var1_zonal, lat_iasi, color='red')
+        ax2.scatter(var1_zonal, lat_iasi, color='red', label='True IASI - GOSAT2')
+
+        ax2.plot(var2_zonal, lat_iasi, color='cyan')
+        ax2.scatter(var2_zonal, lat_iasi, color='cyan', label='Met0 IASI - GOSAT2')
+
+        ax2.axhline(0, color='black', linewidth=1, linestyle='--')
+        ax2.axvline(0, color='black', linewidth=1, linestyle='--')
+
+        plt.show()
 
 
 def iasi_dif_plot(x_res, y_res, th, dir_path, qf, vmin=None, vmax=None,
