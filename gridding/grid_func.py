@@ -20,6 +20,8 @@ def find_cen(value, centers, res):
     for center in centers:
         if center - (res / 2) <= value < center + (res / 2):
             return center
+    # for the case that value is exactly on the last boundary
+    return centers[-1]
 
 
 def read_df(dir_path, m, tot_var, lon_var, lat_var, sat, qf=None):

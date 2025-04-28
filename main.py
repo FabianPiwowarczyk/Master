@@ -45,5 +45,15 @@ def printvar(var_name):
 
 import gridding
 #gridding.regrid_iasi()
-gridding.replot_all()
+#gridding.replot_all()
+
+import CAMS
+CAMS.read_cams_data()
+
+from gridding.grid_func import find_cen, grid_centers
+
+lon, lat = grid_centers(5, 5)
+
+print(find_cen(180, lon, 5))
+
 
