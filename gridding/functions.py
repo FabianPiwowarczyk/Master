@@ -29,6 +29,11 @@ def replot_all():
                   'mean_tot', 3, vmin=None, vmax=None,
                   met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0)
 
+    # CAMS Plots
+    plot_lv3_data(5, 5, 0,
+                  'monthly_means/{}_{}_{}x{}_th{}.nc', 'cams',
+                  'mean_tot', 280, 340)
+
 
 def regrid_iasi():
 

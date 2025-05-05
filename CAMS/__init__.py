@@ -1,1 +1,1 @@
-from .read_cams import read_cams_data
+from .cams_grid import cams_monthly_means
