@@ -183,6 +183,8 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
     tot_col = np.zeros_like(iasi_data['lon'])
     met0_tc = np.zeros_like(iasi_data['lon'])
     apr_col = np.zeros_like(iasi_data['lon'])
+    apr_gosat = np.full((iasi_data['lon'].shape[0], 29), np.nan)
+    iasi_avk = np.full((iasi_data['lon'].shape[0], 29, 29), np.nan)
 
     print('Converting data to total columns:')
     items = list(range(iasi_data['time'].shape[0]))
@@ -226,8 +228,9 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
 
         tot_col[row] = tc
 
-        met0_tc[row] = change_prior(dry_col, col_dic['pre_lev'], col_avk_dict,
-                                    col_dic['alt_lev'], col_dic['apri'], n2o_lay)
+        # prior correction and avk calculation
+        met0_tc[row], apr_gosat[row, nan_count:29], iasi_avk[row, nan_count:29, nan_count:29] = change_prior(dry_col,
+                                    col_dic['pre_lev'], col_avk_dict, col_dic['alt_lev'], col_dic['apri'], n2o_lay)
 
         # additional apriori total column
         apri_lay = lev2lay(col_dic['apri'])
@@ -241,6 +244,8 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
     iasi_data['total_column'] = tot_col
     iasi_data['tc_cor_met0'] = met0_tc
     iasi_data['tc_apri'] = apr_col
+    iasi_data['gosat_apri'] = apr_gosat
+    iasi_data['avk'] = iasi_avk
     print('Returning total columns.')
 
     return iasi_data

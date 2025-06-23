@@ -46,10 +46,12 @@ def convert():
                 'tem_lev': "atmospheric temperatures.",
                 'total_column': "total column in ppm.",
                 'alt_lev': "Altitude levels in meters above sea level.",
-                'tc_cor_met0': "Corrected total column with gosat apriori.",
+                'tc_cor_met0': "Corrected total column with raw gosat apriori.",
                 #'tc_cor_met1': "Corrected total column with gosat apriori and linear aprox.",
                 #'tc_cor_met2': "Corrected total column with gosat apriori top Iasi.",
-                'tc_apri': 'Total column calculated form the apriori.'
+                'tc_apri': 'Total column calculated form the IASI apriori.',
+                'gosat_apri': 'Calculated Gosat prior for IASI levels.',
+                'avk': 'IASI averaging Kernel.'
             }
 
             for key in [el for el in data.keys()]:
@@ -63,14 +65,21 @@ def convert():
             ds.createDimension('index', num_entries)
             level_entries = data['n2o_lev_dry'].shape[1]
             ds.createDimension('level', level_entries)
+            level2_entries = data['avk'].shape[2]
+            ds.createDimension('level2', level2_entries)
 
             for key, values in data.items():
 
-                twodim_keys = ['n2o_lev_dry', 'pre_lev', 'h2o_lev_dry', 'tem_lev', 'alt_lev']
+                twodim_keys = ['n2o_lev_dry', 'pre_lev', 'h2o_lev_dry', 'tem_lev', 'alt_lev', 'gosat_apri']
+                threedim_keys = ['avk']
 
                 if key in twodim_keys:
                     var = ds.createVariable(key, values.dtype, ('index', 'level'))
                     var[:, :] = values
+                    var.description = descriptions[key]
+                elif key in threedim_keys:
+                    var = ds.createVariable(key, values.dtype, ('index', 'level', 'level2'))
+                    var[:, :, :] = values
                     var.description = descriptions[key]
                 else:
                     var = ds.createVariable(key, values.dtype, ('index',))

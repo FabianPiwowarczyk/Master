@@ -115,7 +115,7 @@ def change_prior(dry_col, pre_lvl, avk_dict, alt_lev, old_prior, gas_lay):
     #                     met2=met2_new_prior, met2_cor_lev=met2_cor_lev, met2_cor=met2_cor,
     #                     pre_lev=pre_lvl, old_prior=old_prior)
 
-    return met0_cor #, met1_cor, met2_cor
+    return met0_cor, met0_new_prior, avk  #, met1_cor, met2_cor
 
 
 def calc_avk(avk_dict):
