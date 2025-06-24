@@ -185,6 +185,7 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
     apr_col = np.zeros_like(iasi_data['lon'])
     apr_gosat = np.full((iasi_data['lon'].shape[0], 29), np.nan)
     iasi_avk = np.full((iasi_data['lon'].shape[0], 29, 29), np.nan)
+    iasi_drycol = np.full((iasi_data['lon'].shape[0], 28), np.nan)  # 28 layers
 
     print('Converting data to total columns:')
     items = list(range(iasi_data['time'].shape[0]))
@@ -237,6 +238,7 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
         tc_apri = total_column(gas_lay=apri_lay, dry_col=dry_col)
 
         apr_col[row] = tc_apri
+        iasi_drycol[row, nan_count:28] = dry_col[:]
 
         if 0.2 >= tc >= 0.5:
             print('tc is out of bounds: ', tc)
@@ -246,6 +248,7 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
     iasi_data['tc_apri'] = apr_col
     iasi_data['gosat_apri'] = apr_gosat
     iasi_data['avk'] = iasi_avk
+    iasi_data['dry_col'] = iasi_drycol
     print('Returning total columns.')
 
     return iasi_data

@@ -48,5 +48,5 @@ import gridding
 #gridding.replot_all()
 
 import CAMS
-#CAMS.cams_monthly_means(x_res=5, y_res=5)
+CAMS.cams_monthly_means(x_res=5, y_res=5)
 
