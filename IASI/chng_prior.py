@@ -173,6 +173,7 @@ def linear_methode(deltas, gosat_prior, pre_lev):
 
 def calc_correction(avk, new_prior, old_prior, dry_col, gas_lay):
 
+    # if the vector here is a column or row vector seems to be irrelevant, this technically makes no sense
     tc_cor_lev = np.matmul((np.eye(avk.shape[0]) - avk), (np.log(new_prior[::-1]) - np.log(old_prior[::-1])).T)
     tc_cor_lay = np.exp(lev2lay(tc_cor_lev[::-1]))
 

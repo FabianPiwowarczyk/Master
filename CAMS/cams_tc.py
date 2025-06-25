@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from datetime import datetime, timedelta
+from tqdm import tqdm
 
 
 def cams_tc(month):
@@ -36,10 +37,12 @@ def cams_tc(month):
 
     tc = np.sum(del_P * N2O, axis=1) / Psurf  # Shape (time, lat, lon)
 
-    tc_reshape = np.zeros((tc.shape[0] * tc.shape[1] * tc.shape[2], 3))
+    tc_reshape = np.full((tc.shape[0] * tc.shape[1] * tc.shape[2], 3), np.nan)
 
     idx_count = 0
-    for t in range(tc.shape[0]):
+
+    print(f'Reshaping cams tc{month}:')
+    for t in tqdm(list(range(tc.shape[0]))):  # loading bar
         for lat in range(tc.shape[1]):
             for lon in range(tc.shape[2]):
                 tc_reshape[idx_count, 0] = tc[t, lat, lon]
@@ -47,15 +50,22 @@ def cams_tc(month):
                 tc_reshape[idx_count, 2] = latitude[lat]
                 idx_count += 1
 
-    df = pd.DataFrame({
+    iasi_tc = iasi_avk_tc(time, latitude, longitude, N2O, P, month)
+
+    df_cams = pd.DataFrame({
         'tot_col': tc_reshape[:, 0],
+        'iasi_tc': iasi_tc[:],
         'lon': tc_reshape[:, 1],
         'lat': tc_reshape[:, 2]
     })
 
-    iasi_avk_tc(time, latitude, longitude, N2O, P)
+    df_iasi = pd.DataFrame({
+        'tot_col': iasi_tc[:],
+        'lon': tc_reshape[:, 1],
+        'lat': tc_reshape[:, 2]
+    })
 
-    return df
+    return df_cams, df_iasi
 
 
 def conv_iasi_time_readable(time):
@@ -68,9 +78,9 @@ def conv_iasi_time_readable(time):
     return utc_times
 
 
-def conv_cams_time_readable(time):
+def conv_cams_time_readable(time, month):
     # Define the epoch start date
-    epoch_start = datetime(2020, 1, 1, 0, 0, 0)
+    epoch_start = datetime(2020, month, 1, 0, 0, 0)
 
     # Vectorized calculation of datetime objects
     utc_times = np.array([epoch_start + timedelta(hours=int(hours)) for hours in time])
@@ -78,11 +88,14 @@ def conv_cams_time_readable(time):
     return utc_times
 
 
-def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev):
+def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
 
-    utc_cams = conv_cams_time_readable(time)
+    utc_cams = conv_cams_time_readable(time, m)
 
-    for idx_t, time_step in enumerate(utc_cams):
+    iasi_tc = np.full((time.shape[0] * lat.shape[0] * lon.shape[0]), np.nan)
+
+    idx_count = 0
+    for idx_t, time_step in tqdm(enumerate(utc_cams), total=len(utc_cams)):  # create loading bar
         iasi_data = read_iasi_day(time_step.month, time_step.day)
 
         # Extract lat and lon as 1D arrays
@@ -95,13 +108,14 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev):
             'distance': np.nan  # Fill with NaN
         })
 
-        for idx_lat, lat in enumerate(lat):
-            for idx_lon, lon in enumerate(lon):
-                coord = (lat, lon)
+        for idx_lat, lat_val in enumerate(lat):
+            for idx_lon, lon_val in enumerate(lon):
 
                 # calc distance to coord point to all iasi points
-                df_iasi['distance'] = df_iasi.apply(lambda row: haversine_distance((row['lat'], row['lon']),
-                                                                                   coord), axis=1)
+                df_iasi['distance'] = haversine_distance_vectorized(df_iasi['lat'].values,
+                                                                    df_iasi['lon'].values,
+                                                                    lat_val,
+                                                                    lon_val)
                 min_idx = df_iasi['distance'].idxmin()  # index with minimal distance
 
                 # prep iasi data
@@ -109,7 +123,7 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev):
                 avk = iasi_data['avk'].values[min_idx, nan_count:, nan_count:]
                 apri = iasi_data['apri'].values[min_idx, nan_count:]
                 iasi_pre = iasi_data['pre_lev'].values[min_idx, nan_count:]
-                iasi_dry_col = iasi_data['dry_col'].values[min_idx, nan_count:]
+                #iasi_dry_col = iasi_data['dry_col'].values[min_idx, nan_count:]
 
                 # prep cams N2O and pressure
                 cams_pre_lay = layer_mid_pressure(cams_pre_lev[idx_t, :, idx_lat, idx_lon])
@@ -123,18 +137,26 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev):
                 n2o_iasi_lev[np.where(cams_pre_lay[0] < iasi_pre)[0]] = cams_n2o_lay[0]
                 n2o_iasi_lev[np.where(cams_pre_lay[-1] > iasi_pre)[0]] = cams_n2o_lay[-1]
 
-
                 # interpolate n2o ppm values for iasi lev. All flipped bc np.interp needs ascending values
-                #gosat_n2o_lev[1:-1] = np.interp(pre_lvl[1:-1][::-1], pre_lay[::-1], n2o_gosat_lay[::-1])[::-1]
+                n2o_iasi_lev[np.where(np.isnan(n2o_iasi_lev))[0][::-1]] = np.interp(
+                    iasi_pre[np.where(np.isnan(n2o_iasi_lev))[0]][::-1],  # new levels on which to interpolate
+                    cams_pre_lay[::-1], cams_n2o_lay[::-1])  # cams data
 
-                import matplotlib.pyplot as plt
+                # how would iasi see the cams atmosphere
+                x_sim = (np.matmul(avk, n2o_iasi_lev[::-1]) + np.matmul((np.eye(avk.shape[0]) - avk), apri[::-1]))[::-1]
+                x_sim_lay = lev2lay(x_sim)
 
-                plt.scatter(cams_n2o_lay, cams_pre_lay)
-                plt.scatter(apri, iasi_pre)
-                plt.show()
+                # calc cams tc as iasi would have seen it, with cams tc method
+                del_P = iasi_pre[:-1] - iasi_pre[1:]
+                x_sim_tc = np.sum(del_P * x_sim_lay) / iasi_pre[0]
 
-                import sys
-                sys.exit()
+                # calc total column as iasi does, with iasi dry column
+                #x_sim_tc = total_column(x_sim_lay, iasi_dry_col)
+
+                iasi_tc[idx_count] = x_sim_tc
+                idx_count += 1
+
+    return iasi_tc
 
 
 def read_iasi_day(month, day):
@@ -143,27 +165,18 @@ def read_iasi_day(month, day):
     return ds
 
 
-def haversine_distance(coord1, coord2):
+def haversine_distance_vectorized(lat1, lon1, lat2, lon2):
     """
-    Calculate the great-circle distance between two (lat, lon) points in kilometers.
-
-    Parameters:
-        coord1 (tuple): (latitude, longitude) in degrees
-        coord2 (tuple): (latitude, longitude) in degrees
-
-    Returns:
-        float: distance in kilometers
+    Vectorized haversine distance (in km) between arrays of (lat1, lon1) and a single (lat2, lon2).
     """
-    # Earth radius in kilometers
-    R = 6371.0
-
-    lat1, lon1 = np.radians(coord1)
-    lat2, lon2 = np.radians(coord2)
+    R = 6371.0  # Earth radius in km
+    lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
 
     dlat = lat2 - lat1
     dlon = lon2 - lon1
 
-    a = np.sin(dlat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2)**2
+    a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
+    a = np.clip(a, 0, 1)  # negates rounding error by python
     c = 2 * np.arcsin(np.sqrt(a))
 
     return R * c
@@ -189,3 +202,20 @@ def layer_mid_pressure(P):
     P_mid = np.exp(0.5 * (np.log(P_top) + np.log(P_bottom)))
 
     return P_mid
+
+
+def lev2lay(x_lev):
+    return (x_lev[1:] + x_lev[:-1]) / 2
+
+
+def total_column(gas_lay, dry_col):
+    """
+    compute total column (average dry air mole fraction)
+    input:
+        gas_lay : gas mixing ration in layers
+        dry_col : dry column
+    """
+
+    tc = np.sum(gas_lay * dry_col) / np.sum(dry_col)  # last dim = altitude
+
+    return tc
