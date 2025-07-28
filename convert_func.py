@@ -26,7 +26,9 @@ def convert():
     date_tuples = date_array[1:, :]
 
     for i, date in enumerate(date_tuples):
-        out_path = f'finished_data/2020_{date[0]}_{date[1]}_qf{quality_flag}.nc'
+        #out_path = f'/data/Data/IASI_N2O/2020_{date[0]}_{date[1]}_qf{quality_flag}.nc'
+        out_path = f'/misc/ghgcci7/fabian/iasi_data/2020_{date[0]}_{date[1]}_qf{quality_flag}.nc'
+
         if os.path.exists(out_path):
             print('File: ', out_path, ' already exists.')
         else:
@@ -48,8 +50,8 @@ def convert():
                 'total_column': "total column in ppm.",
                 'alt_lev': "Altitude levels in meters above sea level.",
                 'tc_cor_met0': "Corrected total column with raw gosat apriori.",
-                #'tc_cor_met1': "Corrected total column with gosat apriori and linear aprox.",
-                #'tc_cor_met2': "Corrected total column with gosat apriori top Iasi.",
+                # 'tc_cor_met1': "Corrected total column with gosat apriori and linear aprox.",
+                # 'tc_cor_met2': "Corrected total column with gosat apriori top Iasi.",
                 'tc_apri': 'Total column calculated form the IASI apriori.',
                 'gosat_apri': 'Calculated Gosat prior for IASI levels.',
                 'avk': 'IASI averaging Kernel.',

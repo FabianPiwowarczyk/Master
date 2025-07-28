@@ -54,7 +54,6 @@ def cams_tc(month):
 
     df_cams = pd.DataFrame({
         'tot_col': tc_reshape[:, 0],
-        'iasi_tc': iasi_tc[:],
         'lon': tc_reshape[:, 1],
         'lat': tc_reshape[:, 2]
     })
@@ -96,6 +95,10 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
 
     idx_count = 0
     for idx_t, time_step in tqdm(enumerate(utc_cams), total=len(utc_cams)):  # create loading bar
+        # print(idx_t)
+        # print(time_step)
+        # if idx_t < 199:
+        #     continue
         iasi_data = read_iasi_day(time_step.month, time_step.day)
 
         # Extract lat and lon as 1D arrays
@@ -120,7 +123,8 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
 
                 # prep iasi data
                 nan_count = sum(np.isnan(iasi_data['apri'].values[min_idx, :]))
-                avk = iasi_data['avk'].values[min_idx, nan_count:, nan_count:]
+                avk = iasi_data['avk'].isel(index=min_idx).values[nan_count:, nan_count:]
+
                 apri = iasi_data['apri'].values[min_idx, nan_count:]
                 iasi_pre = iasi_data['pre_lev'].values[min_idx, nan_count:]
                 #iasi_dry_col = iasi_data['dry_col'].values[min_idx, nan_count:]
@@ -160,7 +164,8 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
 
 
 def read_iasi_day(month, day):
-    path = f'finished_data/2020_{month:02d}_{day:02d}_qf3.nc'
+    #path = f'/data/Data/IASI_N2O/2020_{month:02d}_{day:02d}_qf3.nc'
+    path = f'/misc/ghgcci7/fabian/iasi_data/2020_{month:02d}_{day:02d}_qf3.nc'
     ds = xr.open_dataset(path)
     return ds
 

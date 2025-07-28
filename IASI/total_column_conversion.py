@@ -252,21 +252,3 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
     print('Returning total columns.')
 
     return iasi_data
-
-
-def is_point_in_square(lon, lat):
-    """
-    Check if a point (lon, lat) is inside a predefined square inside the Sahara Desert.
-
-    :param lon: Longitude of the point
-    :param lat: Latitude of the point
-    :return: True if the point is inside the square, False otherwise
-    """
-    square = {
-        'min_lon': 10.0,
-        'max_lon': 25.0,
-        'min_lat': 15.0,
-        'max_lat': 30.0
-    }
-
-    return (square['min_lon'] <= lon <= square['max_lon']) and (square['min_lat'] <= lat <= square['max_lat'])

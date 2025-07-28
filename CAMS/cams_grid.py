@@ -6,13 +6,14 @@ from .cams_tc import cams_tc
 
 def cams_monthly_means(x_res, y_res, months):
 
+    months[1] = months[1] + 1
     lon_cen, lat_cen = grid_centers(x_res=x_res, y_res=y_res)
     for m in range(*months):
 
         print(f'Griding Month {m}')
         df_cams, df_iasi = cams_tc(m)
         df_cams_filled = grid(df_cams, lon_cen, x_res, lat_cen, y_res, th=0)
-        df_iasi_filled = grid(df_cams, lon_cen, x_res, lat_cen, y_res, th=0)
+        df_iasi_filled = grid(df_iasi, lon_cen, x_res, lat_cen, y_res, th=0)
 
         save_data(df_cams_filled, x_res, y_res, m, 'cams')
         save_data(df_iasi_filled, x_res, y_res, m, 'cams_iasi')
