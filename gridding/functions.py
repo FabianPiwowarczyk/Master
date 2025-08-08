@@ -41,48 +41,46 @@ def replot_all():
 
 def regrid_iasi():
 
-    # monthly_mean(5, 5, 0,
-    #              'gosat_data/IUP-GHG-L2-N2O-GOSAT2-FOCAL-2020',
-    #              'xn2o', 'longitude', 'latitude', 'gosat')
+    print('Grid gosat data th=0')
+    monthly_mean(x_res=5, y_res=5, th=0,
+                 dir_path='gosat_data/IUP-GHG-L2-N2O-GOSAT2-FOCAL-2020',
+                 tot_var='xn2o', lon_var='longitude', lat_var='latitude', sat='gosat')
 
-    print('Regrid Iasi in 1x1')
+    print('Grid gosat data th=4')
+    monthly_mean(x_res=5, y_res=5, th=4,
+                 dir_path='gosat_data/IUP-GHG-L2-N2O-GOSAT2-FOCAL-2020',
+                 tot_var='xn2o', lon_var='longitude', lat_var='latitude', sat='gosat')
+
+    print('Regrid Iasi in 1x1 th=0')
     print('Normal tot_col')
-    monthly_mean(1, 1, 0,
-                 '/data/Data/IASI_N2O/2020_',
-                 'total_column', 'lon', 'lat', 'iasi', 3)
+    path = f'/misc/ghgcci7/fabian/iasi_data/2020_'
+    monthly_mean(x_res=1, y_res=1, th=0,
+                 dir_path=path,
+                 tot_var='total_column', lon_var='lon', lat_var='lat', sat='iasi', qf=3)
 
     print('Method 0 correction')
-    monthly_mean(1, 1, 0,
-                 '/data/Data/IASI_N2O/2020_',
-                 'tc_cor_met0', 'lon', 'lat', 'iasi', 3)
+    monthly_mean(x_res=1, y_res=1, th=0,
+                 dir_path=path,
+                 tot_var='tc_cor_met0', lon_var='lon', lat_var='lat', sat='iasi', qf=3)
 
-    print('Method 1 correction')
-    monthly_mean(1, 1, 0,
-                 '/data/Data/IASI_N2O/2020_',
-                 'tc_cor_met1', 'lon', 'lat', 'iasi', 3)
-
-    print('Method 2 correction')
-    monthly_mean(1, 1, 0,
-                 '/data/Data/IASI_N2O/2020_',
-                 'tc_cor_met2', 'lon', 'lat', 'iasi', 3)
-
-    print('Regrid Iasi in 5x5')
+    print('Regrid Iasi in 5x5 th=0')
     print('Normal tot_col')
-    monthly_mean(5, 5, 0,
-                 '/data/Data/IASI_N2O/2020_',
-                 'total_column', 'lon', 'lat', 'iasi', 3)
+    monthly_mean(x_res=5, y_res=5, th=0,
+                 dir_path=path,
+                 tot_var='total_column', lon_var='lon', lat_var='lat', sat='iasi', qf=3)
 
     print('Method 0 correction')
-    monthly_mean(5, 5, 0,
-                 '/data/Data/IASI_N2O/2020_',
-                 'tc_cor_met0', 'lon', 'lat', 'iasi', 3)
+    monthly_mean(x_res=5, y_res=5, th=0,
+                 dir_path=path,
+                 tot_var='tc_cor_met0', lon_var='lon', lat_var='lat', sat='iasi', qf=3)
 
-    print('Method 1 correction')
-    monthly_mean(5, 5, 0,
-                 '/data/Data/IASI_N2O/2020_',
-                 'tc_cor_met1', 'lon', 'lat', 'iasi', 3)
+    print('Regrid Iasi in 5x5 th=100')
+    print('Normal tot_col')
+    monthly_mean(x_res=5, y_res=5, th=100,
+                 dir_path=path,
+                 tot_var='total_column', lon_var='lon', lat_var='lat', sat='iasi', qf=3)
 
-    print('Method 2 correction')
-    monthly_mean(5, 5, 0,
-                 '/data/Data/IASI_N2O/2020_',
-                 'tc_cor_met2', 'lon', 'lat', 'iasi', 3)
+    print('Method 0 correction')
+    monthly_mean(x_res=5, y_res=5, th=100,
+                 dir_path=path,
+                 tot_var='tc_cor_met0', lon_var='lon', lat_var='lat', sat='iasi', qf=3)

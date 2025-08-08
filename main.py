@@ -42,10 +42,10 @@ def printvar(var_name):
 
 
 from convert_func import convert
-convert()
+#convert()
 
 import gridding
-#gridding.regrid_iasi()
+gridding.regrid_iasi()
 #gridding.replot_all()
 
 from concurrent.futures import ProcessPoolExecutor
@@ -54,7 +54,7 @@ from functools import partial
 #inputs = [(1, 6), (7, 12)]  # Two different inputs
 
 import CAMS
-CAMS.cams_monthly_means(x_res=5, y_res=5, months=[1, 12])
+#CAMS.cams_monthly_means(x_res=5, y_res=5, months=[1, 12])
 
 # Use partial to fix a and b
 # partial_func = partial(CAMS.cams_monthly_means, 5, 5)
