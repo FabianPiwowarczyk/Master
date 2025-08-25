@@ -216,7 +216,7 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
         n2o_lay = lev2lay(x_lev=col_dic['n2o_lev'])
         h2o_lay = lev2lay(x_lev=col_dic['h2o_lev'])
 
-        alt_lay = altitude_lev2lay(alt_lev=col_dic['alt_lev'], pre_lev=col_dic['pre_lev'])
+        alt_lay = lev2lay(col_dic['alt_lev'])
 
         gra_geo = grav_geoid(lat=row_lat)
 

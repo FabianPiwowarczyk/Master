@@ -33,9 +33,10 @@ def change_prior(dry_col, pre_lvl, avk_dict, alt_lev, old_prior, gas_lay, org_n2
     n2o_prof = xn2o * n2o_prof / np.mean(n2o_prof)  # GOSAT prior
 
     # pressure layers IASI
-    pre_lay = np.zeros_like(pre_lvl[:-1])
-    for i in range(len(pre_lay)):
-        pre_lay[i] = (pre_lvl[i] + pre_lvl[i+1]) / 2
+    # pre_lay = np.zeros_like(pre_lvl[:-1])
+    # for i in range(len(pre_lay)):
+    #     pre_lay[i] = (pre_lvl[i] + pre_lvl[i+1]) / 2
+    pre_lay = layer_mid_pressure(pre_lvl)
 
     cum_sum_par = np.cumsum(dry_col)  # Particle count for interpolation
 
@@ -175,14 +176,11 @@ def calc_correction(avk, new_prior, old_prior, dry_col, gas_lay, ori_n2o_lev):
 
     # if the vector here is a column or row vector seems to be irrelevant, this technically makes no sense
     tc_cor_lev = np.matmul((np.eye(avk.shape[0]) - avk), (np.log(new_prior[::-1]) - np.log(old_prior[::-1])).T)
-    tc_cor_lay = np.exp(lev2lay(tc_cor_lev[::-1]))
-
-    tc_cor = total_column_correction(gas_lay, dry_col, tc_cor_lay)
 
     # calc original prof before level to layer
     x_new_lev = ori_n2o_lev * np.exp(tc_cor_lev[::-1])
     x_new_lay = lev2lay(x_new_lev)
-    tc_new = total_column_original(x_new_lay, dry_col)
+    tc_cor = total_column_original(x_new_lay, dry_col)
 
     if 0.2 >= tc_cor >= 0.5:
         print('tc is out of bounds: ', tc_cor)
@@ -198,6 +196,28 @@ def total_column_original(gas_lay, dry_col):
 def total_column_correction(gas_lay, dry_col, tc_cor_lay):
     tc = np.sum(gas_lay * tc_cor_lay * dry_col) / np.sum(dry_col)  # last dim = altitude
     return tc
+
+
+def layer_mid_pressure(P):
+    """
+    Compute pressure at the center of each layer, assuming pressure drops exponentially with height
+    and constant temperature in a layer.
+
+    Parameters:
+        P (array-like): Pressure at level boundaries (length n+1)
+
+    Returns:
+        np.ndarray: Pressure at layer centers (length n)
+    """
+
+    P = np.where(P == 0, 1e-6, P)  # don't let a log(0) stop you!
+    P_top = P[:-1]
+    P_bottom = P[1:]
+
+    # Geometric/logarithmic mean (exponential profile assumption)
+    P_mid = np.exp(0.5 * (np.log(P_top) + np.log(P_bottom)))
+
+    return P_mid
 
 
 def plot_prior_methodes(met0, met0_cor_lev, met0_cor,

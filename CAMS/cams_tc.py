@@ -127,7 +127,6 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
 
                 apri = iasi_data['apri'].values[min_idx, nan_count:]
                 iasi_pre = iasi_data['pre_lev'].values[min_idx, nan_count:]
-                #iasi_dry_col = iasi_data['dry_col'].values[min_idx, nan_count:]
 
                 # prep cams N2O and pressure
                 cams_pre_lay = layer_mid_pressure(cams_pre_lev[idx_t, :, idx_lat, idx_lon])
@@ -147,7 +146,8 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
                     cams_pre_lay[::-1], cams_n2o_lay[::-1])  # cams data
 
                 # how would iasi see the cams atmosphere
-                x_sim = (np.matmul(avk, n2o_iasi_lev[::-1]) + np.matmul((np.eye(avk.shape[0]) - avk), apri[::-1]))[::-1]
+                x_sim = np.exp(np.matmul(avk, np.log(n2o_iasi_lev[::-1])) +
+                                   np.matmul((np.eye(avk.shape[0]) - avk), np.log(apri[::-1])))[::-1]
                 x_sim_lay = lev2lay(x_sim)
 
                 # calc cams tc as iasi would have seen it, with cams tc method
@@ -165,7 +165,7 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
 
 def read_iasi_day(month, day):
     #path = f'/data/Data/IASI_N2O/2020_{month:02d}_{day:02d}_qf3.nc'
-    path = f'/misc/ghgcci7/fabian/iasi_data/2020_{month:02d}_{day:02d}_qf3.nc'
+    path = f'/misc/ghgcci7/fabian/iasi_datav1/2020_{month:02d}_{day:02d}_qf3.nc'
     ds = xr.open_dataset(path)
     return ds
 
