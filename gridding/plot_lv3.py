@@ -191,7 +191,7 @@ def combined_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         # Plot the count of gosat data per grid cell
         gcount_plot = axs[1, 1].pcolormesh(lon_bnds, lat_bnds, gosat_count, transform=ccrs.PlateCarree(), cmap='jet',
                                            vmin=gmin, vmax=gmax)
-        axs[1, 1].set_title(f'IASI count {x_res}x{y_res} grid 2020-{m} cbar {gmin} - {gmax}')
+        axs[1, 1].set_title(f'GOSAT count {x_res}x{y_res} grid 2020-{m} cbar {gmin} - {gmax}')
 
         cbar = fig.colorbar(gcount_plot, ax=axs[1, 1], orientation='vertical', fraction=0.02, pad=0.04)
         cbar.set_label(r'N')
@@ -213,6 +213,7 @@ def zonal_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         ds_gosat = xr.open_dataset(gosat_path.format('gosat', m, x_res, y_res, th))
 
         ds_cams = xr.open_dataset(gosat_path.format('cams', m, x_res, y_res, th))
+        ds_cams_iasi = xr.open_dataset(gosat_path.format('cams_iasi', m, x_res, y_res, th))
 
         lat_iasi = ds_iasi['lat_cen'].values
 
@@ -228,6 +229,9 @@ def zonal_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         variable_cams = ds_cams[var].values
         cams_zonal = zonal_mean(variable_cams)
 
+        variable_cams_iasi = ds_cams_iasi[var].values
+        cams_iasi_zonal = zonal_mean(variable_cams_iasi)
+
         var1 = variable_iasi - variable_gosat
         var1_zonal = zonal_mean(var1)
 
@@ -236,6 +240,9 @@ def zonal_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
 
         var3 = variable_cams - variable_gosat
         var3_zonal = zonal_mean(var3)
+
+        var4 = variable_cams_iasi - variable_gosat
+        var4_zonal = zonal_mean(var4)
 
         # Graph plot
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6))
@@ -251,6 +258,9 @@ def zonal_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
 
         ax1.plot(cams_zonal, lat_iasi, color='green')
         ax1.scatter(cams_zonal, lat_iasi, color='green', label='CAMS')
+
+        ax1.plot(cams_iasi_zonal, lat_iasi, color='orange')
+        ax1.scatter(cams_iasi_zonal, lat_iasi, color='orange', label='CAMS (iasi avk)')
 
         ax1.axhline(0, color='black', linewidth=1, linestyle='--')
 
@@ -268,6 +278,9 @@ def zonal_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
 
         ax2.plot(var3_zonal, lat_iasi, color='green')
         ax2.scatter(var3_zonal, lat_iasi, color='green', label='CAMS - GOSAT2')
+
+        ax2.plot(var4_zonal, lat_iasi, color='orange')
+        ax2.scatter(var4_zonal, lat_iasi, color='orange', label='CAMS (iasi avk) - GOSAT2')
 
         ax2.axhline(0, color='black', linewidth=1, linestyle='--')
         ax2.axvline(0, color='black', linewidth=1, linestyle='--')
@@ -297,6 +310,7 @@ def dif_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         ds_gosat = xr.open_dataset(gosat_path.format('gosat', m, x_res, y_res, th))
 
         ds_cams = xr.open_dataset(gosat_path.format('cams', m, x_res, y_res, th))
+        ds_cams_iasi = xr.open_dataset(gosat_path.format('cams_iasi', m, x_res, y_res, th))
 
         lon_iasi = ds_iasi['lon_cen'].values
         lat_iasi = ds_iasi['lat_cen'].values
@@ -304,11 +318,12 @@ def dif_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         variable_met = ds_met[var].values
         variable_gosat = ds_gosat[var].values
         variable_cams = ds_cams[var].values
+        variable_cams_iasi = ds_cams_iasi[var].values
 
         var1 = variable_iasi - variable_gosat
         var2 = variable_met - variable_gosat
         var3 = variable_cams - variable_gosat
-        var4 = variable_cams - variable_iasi
+        var4 = variable_cams_iasi - variable_iasi
 
         mean_var1 = np.nanmean(var1)
         std_var1 = np.nanstd(var1)
@@ -355,7 +370,7 @@ def dif_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
                                           cmap='seismic', norm=norm)
         axs[0, 1].set_title(f'Cor met{met} IASI - GOSAT {x_res}x{y_res} grid 2020-{m} \n {mean_var2:.2f} \u00B1 {std_var2:.2f}')
 
-        # ---------------- Plot 3: camns - gosat --------------
+        # ---------------- Plot 3: cams - gosat --------------
         axs[1, 0].coastlines()
         axs[1, 0].add_feature(cfeature.BORDERS)
         axs[1, 0].add_feature(cfeature.LAND, facecolor='gray')
@@ -387,7 +402,7 @@ def dif_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         # Plot the count of iasi data per grid cell
         c_i_plot = axs[1, 1].pcolormesh(lon_bnds, lat_bnds, var4, transform=ccrs.PlateCarree(),
                                         cmap='seismic', norm=norm)
-        axs[1, 1].set_title(f'CAMS - IASI {x_res}x{y_res} grid 2020-{m} cbar')
+        axs[1, 1].set_title(f'CAMS (iasi avk) - IASI {x_res}x{y_res} grid 2020-{m} cbar')
 
         # ---------------- Shared Colorbar ----------------
         # Create a shared colorbar for both subplots
@@ -396,3 +411,142 @@ def dif_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
 
         outpath = f'pictures/differences_{x_res}x{y_res}_{m}.png'
         plt.savefig(outpath)
+
+
+def seasonal_plot():
+    var = 'mean_tot'
+    x_res = 5
+    y_res = 5
+    path = 'monthly_means/{}_{:02}_{}x{}_th{}.nc'
+    path_iasi = 'monthly_means/{}_{:02}_{}x{}_th{}_qf{}.nc'
+
+    # Load first month just to get lat array length
+    ds_iasi_first = xr.open_dataset(path_iasi.format('iasi', 1, x_res, y_res, 0, 3))
+    lat_cen = ds_iasi_first['lat_cen'].values
+    n_lat = len(lat_cen)
+
+    # Create array: rows = lat, cols = 12 months
+    all_iasi_zonal = np.full((n_lat, 12), np.nan)
+    all_gosat_zonal = np.full((n_lat, 12), np.nan)
+    all_cams_zonal = np.full((n_lat, 12), np.nan)
+    all_cams_iasi_zonal = np.full((n_lat, 12), np.nan)
+
+    for m in range(1, 13):
+
+        ds_iasi = xr.open_dataset(path_iasi.format('iasi', m, x_res, y_res, 0, 3))
+        ds_gosat = xr.open_dataset(path.format('gosat', m, x_res, y_res, 0))
+        ds_cams = xr.open_dataset(path.format('cams', m, x_res, y_res, 0))
+        ds_cams_iasi = xr.open_dataset(path.format('cams_iasi', m, x_res, y_res, 0))
+
+        variable_iasi = ds_iasi[var].values
+        iasi_zonal = zonal_mean(variable_iasi)
+        all_iasi_zonal[:, m - 1] = iasi_zonal[:,0]
+
+        variable_gosat = ds_gosat[var].values
+        gosat_zonal = zonal_mean(variable_gosat)
+        all_gosat_zonal[:, m - 1] = gosat_zonal[:,0]
+
+        variable_cams = ds_cams[var].values
+        cams_zonal = zonal_mean(variable_cams)
+        all_cams_zonal[:, m - 1] = cams_zonal[:,0]
+
+        variable_cams_iasi = ds_cams_iasi[var].values
+        cams_iasi_zonal = zonal_mean(variable_cams_iasi)
+        all_cams_iasi_zonal[:, m - 1] = cams_iasi_zonal[:,0]
+
+        # var1 = variable_iasi - variable_gosat
+        # var1_zonal = zonal_mean(var1)
+        #
+        # var3 = variable_cams - variable_gosat
+        # var3_zonal = zonal_mean(var3)
+        #
+        # var4 = variable_cams_iasi - variable_gosat
+        # var4_zonal = zonal_mean(var4)
+
+
+    ################# Plot Seasonal: Plot original data #################
+    months = np.arange(1, 13)  # 1 to 12
+    M, L = np.meshgrid(months, lat_cen)
+
+    all_data = [
+        (all_iasi_zonal, "IASI Zonal Mean"),
+        (all_gosat_zonal, "GOSAT Zonal Mean"),
+        (all_cams_zonal, "CAMS Zonal Mean"),
+        (all_cams_iasi_zonal, "CAMS (IASI AVK) Zonal Mean")
+    ]
+
+    vmin = min(np.nanmin(d[0]) for d in all_data)
+    vmax = max(np.nanmax(d[0]) for d in all_data)
+
+    fig, axs = plt.subplots(2, 2, figsize=(12, 8), sharex=True, sharey=True)
+    cs = []
+
+    for ax, (data, title) in zip(axs.ravel(), all_data):
+        c = ax.contourf(M, L, data, levels=20, cmap='jet', vmin=vmin, vmax=vmax)
+        ax.set_title(title)
+        ax.set_ylabel("Latitude")
+        cs.append(c)
+    for i in range(2):
+        axs[1, i].set_xlabel("Month")
+
+    xticks = [1, 3, 6, 9, 12]
+
+    for ax in axs.ravel():  # all 4 axes
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xticks)
+        ax.tick_params(axis='x', labelbottom=True)  # force labels to show
+
+    # Adjust layout to make space for colorbar
+    fig.subplots_adjust(right=0.88)  # leave space on right
+
+    # Add overall title
+    fig.suptitle("Seasonal Zonal Means for 2020", fontsize=16)
+
+    # Add colorbar to the right of all subplots
+    cbar_ax = fig.add_axes([0.90, 0.15, 0.02, 0.7])  # [left, bottom, width, height]
+    cbar = fig.colorbar(cs[0], cax=cbar_ax)
+    cbar.set_label(r"mean $\mathrm{XN}_2\mathrm{O}$ in ppb")
+
+    outpath_original = f'pictures/seasonal_{x_res}x{y_res}.png'
+    plt.savefig(outpath_original)
+
+    ################# Plot Seasonal: Plot diffs #################
+
+    diff_data = [
+        (all_iasi_zonal - all_gosat_zonal, "IASI - GOSAT Zonal Mean"),
+        (all_cams_zonal - all_gosat_zonal, "CAMS - GOSAT Zonal Mean")
+    ]
+
+    vmin = min(np.nanmin(d[0]) for d in diff_data)
+    vmax = max(np.nanmax(d[0]) for d in diff_data)
+
+    fig, axs = plt.subplots(1, 2, figsize=(12, 4), sharex=True, sharey=True)
+    cs = []
+
+    for ax, (data, title) in zip(axs.ravel(), diff_data):
+        c = ax.contourf(M, L, data, levels=20, cmap='jet', vmin=vmin, vmax=vmax)
+        ax.set_title(title)
+        ax.set_xlabel("Month")
+        ax.set_ylabel("Latitude")
+        cs.append(c)
+
+    xticks = [1, 3, 6, 9, 12]
+
+    for ax in axs.ravel():
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xticks)
+        ax.tick_params(axis='x', labelbottom=True)  # force labels to show
+
+    # Adjust layout to make space for colorbar
+    fig.subplots_adjust(right=0.88)  # leave space on right
+
+    # Add overall title
+    fig.suptitle("Seasonal Diff Zonal Means for 2020", fontsize=16)
+
+    # Add colorbar to the right of all subplots
+    cbar_ax = fig.add_axes([0.90, 0.15, 0.02, 0.7])  # [left, bottom, width, height]
+    cbar = fig.colorbar(cs[0], cax=cbar_ax)
+    cbar.set_label(r"mean $\mathrm{XN}_2\mathrm{O}$ in ppb")
+
+    outpath_diff = f'pictures/seasonal_diff_{x_res}x{y_res}.png'
+    plt.savefig(outpath_diff)

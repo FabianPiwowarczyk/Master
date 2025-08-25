@@ -157,7 +157,7 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
                 # calc total column as iasi does, with iasi dry column
                 #x_sim_tc = total_column(x_sim_lay, iasi_dry_col)
 
-                iasi_tc[idx_count] = x_sim_tc
+                iasi_tc[idx_count] = x_sim_tc * 1000  # back to ppb
                 idx_count += 1
 
     return iasi_tc

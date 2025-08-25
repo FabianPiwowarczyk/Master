@@ -4,7 +4,7 @@ from dask.dot import label
 from scipy.optimize import curve_fit
 
 
-def change_prior(dry_col, pre_lvl, avk_dict, alt_lev, old_prior, gas_lay):
+def change_prior(dry_col, pre_lvl, avk_dict, alt_lev, old_prior, gas_lay, org_n2o_lev):
 
     avk = calc_avk(avk_dict=avk_dict)
 
@@ -102,7 +102,7 @@ def change_prior(dry_col, pre_lvl, avk_dict, alt_lev, old_prior, gas_lay):
     new_prior = gosat_n2o_lev * cor_fac
 
     met0_new_prior = new_prior.copy()
-    met0_cor_lev, met0_cor = calc_correction(avk, met0_new_prior, old_prior, dry_col, gas_lay)
+    met0_cor_lev, met0_cor = calc_correction(avk, met0_new_prior, old_prior, dry_col, gas_lay, org_n2o_lev)
 
     # met1_new_prior = linear_methode(deltas, new_prior.copy(), pre_lvl)
     # met1_cor_lev, met1_cor = calc_correction(avk, met1_new_prior, old_prior, dry_col, gas_lay)
@@ -171,7 +171,7 @@ def linear_methode(deltas, gosat_prior, pre_lev):
     return gosat_prior
 
 
-def calc_correction(avk, new_prior, old_prior, dry_col, gas_lay):
+def calc_correction(avk, new_prior, old_prior, dry_col, gas_lay, ori_n2o_lev):
 
     # if the vector here is a column or row vector seems to be irrelevant, this technically makes no sense
     tc_cor_lev = np.matmul((np.eye(avk.shape[0]) - avk), (np.log(new_prior[::-1]) - np.log(old_prior[::-1])).T)
@@ -179,10 +179,20 @@ def calc_correction(avk, new_prior, old_prior, dry_col, gas_lay):
 
     tc_cor = total_column_correction(gas_lay, dry_col, tc_cor_lay)
 
+    # calc original prof before level to layer
+    x_new_lev = ori_n2o_lev * np.exp(tc_cor_lev[::-1])
+    x_new_lay = lev2lay(x_new_lev)
+    tc_new = total_column_original(x_new_lay, dry_col)
+
     if 0.2 >= tc_cor >= 0.5:
         print('tc is out of bounds: ', tc_cor)
 
     return tc_cor_lev[::-1], tc_cor
+
+
+def total_column_original(gas_lay, dry_col):
+    tc = np.sum(gas_lay * dry_col) / np.sum(dry_col)  # last dim = altitude
+    return tc
 
 
 def total_column_correction(gas_lay, dry_col, tc_cor_lay):

@@ -1,4 +1,4 @@
-from .plot_lv3 import plot_lv3_data, combined_plot, zonal_plot, dif_plot
+from .plot_lv3 import plot_lv3_data, combined_plot, zonal_plot, dif_plot, seasonal_plot
 from .grid_func import monthly_mean
 
 
@@ -34,9 +34,15 @@ def replot_all():
                   'monthly_means/{}_{}_{}x{}_th{}.nc', 'cams',
                   'mean_tot', 280, 340)
 
+    plot_lv3_data(5, 5, 0,
+                  'monthly_means/{}_{}_{}x{}_th{}.nc', 'cams_iasi',
+                  'mean_tot', 280, 340)
+
     dif_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
                   'mean_tot', 3, vmin=-30, vmax=30,
                   met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0)
+
+    seasonal_plot()
 
 
 def regrid_iasi():

@@ -36,7 +36,6 @@ def dry_column(pre_lev, h2o_dry, gra_lay):
     hdry = h2o_dry * 1e-6  # ppm -> 1
     h2o_wet = hdry / (1. + hdry)
     # calculate molar mass of wet air
-
     mwet = mdry * (1. - h2o_wet) + mh2o * h2o_wet
     # calculate number of wet air particles per layer
     wet_col = pre_del * avogadro / mwet / gra_lay
@@ -231,7 +230,8 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
 
         # prior correction and avk calculation
         met0_tc[row], apr_gosat[row, nan_count:29], iasi_avk[row, nan_count:29, nan_count:29] = change_prior(dry_col,
-                                    col_dic['pre_lev'], col_avk_dict, col_dic['alt_lev'], col_dic['apri'], n2o_lay)
+                                    col_dic['pre_lev'], col_avk_dict, col_dic['alt_lev'],
+                                    col_dic['apri'], n2o_lay, col_dic['n2o_lev'])
 
         # additional apriori total column
         apri_lay = lev2lay(col_dic['apri'])
