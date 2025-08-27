@@ -50,12 +50,8 @@ def change_prior(dry_col, pre_lvl, avk_dict, alt_lev, old_prior, gas_lay, org_n2
     # interpolation
     gosat_pre_lev[1:-1] = np.interp(n_lay, cum_sum_par, pre_lay)
 
-    gosat_pre_lay = np.zeros_like(gosat_pre_lev[:-1])
-    for i in range(len(gosat_pre_lay)):
-        gosat_pre_lay[i] = (gosat_pre_lev[i] + gosat_pre_lev[i+1]) / 2
-
     # cal weights for weighted average
-    deltas = np.zeros((len(gosat_pre_lay), len(pre_lay)))
+    deltas = np.zeros((len(gosat_pre_lev[:-1]), len(pre_lay)))  # -1 element for layer instead of level
 
     for i in range(deltas.shape[0]):
         gpre_1 = gosat_pre_lev[i]
@@ -87,6 +83,7 @@ def change_prior(dry_col, pre_lvl, avk_dict, alt_lev, old_prior, gas_lay, org_n2
             elif ipre_1 <= gpre_2:  # iasi layer over gosat layer
                 deltas[i, j] = 0.
 
+    # gosat n2o on iasi layers
     n2o_gosat_lay = np.sum(n2o_prof[:, np.newaxis] * deltas, axis=0)  # calc weighted average
 
     gosat_n2o_lev = np.zeros_like(pre_lvl)
