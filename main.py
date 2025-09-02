@@ -11,9 +11,9 @@ file_path = "data/IASIA_MUSICA_030300_L2_AllTargetProducts_20200101000557_68496.
 dataset = nc.Dataset(file_path, mode='r')
 
 # Print a list of all variable names
-print("Variable names:")
-for var_name in dataset.variables:
-   print(var_name)
+# print("Variable names:")
+# for var_name in dataset.variables:
+#    print(var_name)
 
 
 def printvar(var_name):
@@ -39,14 +39,17 @@ def printvar(var_name):
         print("Dimensions:", variable.dimensions)
 
 #printvar('musica_fit_quality_flag')
-printvar('musica_ghg')
+#printvar('musica_ghg')
+
+#from CAMS.mean_cols import plot_mean_columns
+#plot_mean_columns(month=1, coord=[(0, 5), (10, 15)])
 
 
-#from convert_func import convert
-#convert()
+from convert_func import convert
+convert()
 
-#import gridding
-#gridding.regrid_iasi()
+import gridding
+gridding.regrid_iasi()
 #gridding.replot_all()
 
 #from gridding.plot_lv3 import seasonal_plot

@@ -145,9 +145,18 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
                     iasi_pre[np.where(np.isnan(n2o_iasi_lev))[0]][::-1],  # new levels on which to interpolate
                     cams_pre_lay[::-1], cams_n2o_lay[::-1])  # cams data
 
+                if np.any(n2o_iasi_lev == 0):
+                    print("Array contains zeros")
+                    print(n2o_iasi_lev)
+                    print(idx_t, idx_lat, idx_lon)
+
+                    import sys
+                    sys.exit()
+
                 # how would iasi see the cams atmosphere
                 x_sim = np.exp(np.matmul(avk, np.log(n2o_iasi_lev[::-1])) +
                                    np.matmul((np.eye(avk.shape[0]) - avk), np.log(apri[::-1])))[::-1]
+
                 x_sim_lay = lev2lay(x_sim)
 
                 # calc cams tc as iasi would have seen it, with cams tc method
