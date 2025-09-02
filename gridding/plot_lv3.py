@@ -412,6 +412,94 @@ def dif_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         outpath = f'pictures/differences_{x_res}x{y_res}_{m}.png'
         plt.savefig(outpath)
 
+        ############################## diff plots relative to zonal mean ########################################
+
+        norm = mcolors.TwoSlopeNorm(vmin=-10, vcenter=0, vmax=10)  # norm for colorbar
+
+        var1 = var1 - zonal_mean(var1)
+        var2 = var2 - zonal_mean(var2)
+        var3 = var3 - zonal_mean(var3)
+        var4 = var4 - zonal_mean(var4)
+
+        # Create a figure with two subplots side by side
+        fig, axs = plt.subplots(2, 2, figsize=(18, 10), subplot_kw={'projection': ccrs.PlateCarree()})
+
+        # ---------------- Plot 1: iasi ----------------
+        axs[0, 0].coastlines()
+        axs[0, 0].add_feature(cfeature.BORDERS)
+        axs[0, 0].add_feature(cfeature.LAND, facecolor='gray')
+        axs[0, 0].add_feature(cfeature.OCEAN, facecolor='lightgray')
+
+        # Add gridlines and set latitude/longitude labels
+        gl00 = axs[0, 0].gridlines(draw_labels=True, linestyle='--', color='black')
+        gl00.top_labels = gl00.right_labels = False
+        gl00.xlabel_style = {'size': 10, 'color': 'black'}
+        gl00.ylabel_style = {'size': 10, 'color': 'black'}
+
+        # Plot the tot_col variable for IASI - GOSAT
+        iasi_plot = axs[0, 0].pcolormesh(lon_bnds, lat_bnds, var1, transform=ccrs.PlateCarree(),
+                                         cmap='seismic', norm=norm)
+        axs[0, 0].set_title(f'IASI - GOSAT - ZONAL {x_res}x{y_res} grid 2020-{m} \n {mean_var1:.2f} \u00B1 {std_var1:.2f}')
+
+        # ---------------- Plot 2: methode --------------
+        axs[0, 1].coastlines()
+        axs[0, 1].add_feature(cfeature.BORDERS)
+        axs[0, 1].add_feature(cfeature.LAND, facecolor='gray')
+        axs[0, 1].add_feature(cfeature.OCEAN, facecolor='lightgray')
+
+        # Add gridlines and set latitude/longitude labels
+        gl01 = axs[0, 1].gridlines(draw_labels=True, linestyle='--', color='black')
+        gl01.top_labels = gl01.right_labels = False
+        gl01.xlabel_style = {'size': 10, 'color': 'black'}
+        gl01.ylabel_style = {'size': 10, 'color': 'black'}
+
+        # Plot the count variable for IASI MET0 - GOSAT
+        gosat_plot = axs[0, 1].pcolormesh(lon_bnds, lat_bnds, var2, transform=ccrs.PlateCarree(),
+                                          cmap='seismic', norm=norm)
+        axs[0, 1].set_title(f'Cor met{met} IASI - GOSAT - ZONAL {x_res}x{y_res} grid 2020-{m} \n {mean_var2:.2f} \u00B1 {std_var2:.2f}')
+
+        # ---------------- Plot 3: cams - gosat --------------
+        axs[1, 0].coastlines()
+        axs[1, 0].add_feature(cfeature.BORDERS)
+        axs[1, 0].add_feature(cfeature.LAND, facecolor='gray')
+        axs[1, 0].add_feature(cfeature.OCEAN, facecolor='lightgray')
+
+        # Add gridlines and set latitude/longitude labels
+        gl10 = axs[1, 0].gridlines(draw_labels=True, linestyle='--', color='black')
+        gl10.top_labels = gl10.right_labels = False
+        gl10.xlabel_style = {'size': 10, 'color': 'black'}
+        gl10.ylabel_style = {'size': 10, 'color': 'black'}
+
+        # Plot the count of iasi data per grid cell
+        c_g_plot = axs[1, 0].pcolormesh(lon_bnds, lat_bnds, var3, transform=ccrs.PlateCarree(),
+                                        cmap='seismic', norm=norm)
+        axs[1, 0].set_title(f'CAMS - GOSAT - ZONAL {x_res}x{y_res} grid 2020-{m} cbar')
+
+        # ---------------- Plot 4: cams - iasi --------------
+        axs[1, 1].coastlines()
+        axs[1, 1].add_feature(cfeature.BORDERS)
+        axs[1, 1].add_feature(cfeature.LAND, facecolor='gray')
+        axs[1, 1].add_feature(cfeature.OCEAN, facecolor='lightgray')
+
+        # Add gridlines and set latitude/longitude labels
+        gl11 = axs[1, 1].gridlines(draw_labels=True, linestyle='--', color='black')
+        gl11.top_labels = gl11.right_labels = False
+        gl11.xlabel_style = {'size': 10, 'color': 'black'}
+        gl11.ylabel_style = {'size': 10, 'color': 'black'}
+
+        # Plot the count of iasi data per grid cell
+        c_i_plot = axs[1, 1].pcolormesh(lon_bnds, lat_bnds, var4, transform=ccrs.PlateCarree(),
+                                        cmap='seismic', norm=norm)
+        axs[1, 1].set_title(f'CAMS (iasi avk) - IASI - ZONAL {x_res}x{y_res} grid 2020-{m} cbar')
+
+        # ---------------- Shared Colorbar ----------------
+        # Create a shared colorbar for both subplots
+        cbar = fig.colorbar(iasi_plot, ax=axs, orientation='vertical', fraction=0.02, pad=0.04)
+        cbar.set_label(r'$\mathrm{xN}_2\mathrm{O}$ in ppb')
+
+        outpath = f'pictures/differences_relative_zonal_{x_res}x{y_res}_{m}.png'
+        plt.savefig(outpath)
+
 
 def seasonal_plot():
     var = 'mean_tot'
@@ -482,7 +570,8 @@ def seasonal_plot():
     cs = []
 
     for ax, (data, title) in zip(axs.ravel(), all_data):
-        c = ax.contourf(M, L, data, levels=20, cmap='jet', vmin=vmin, vmax=vmax)
+        #c = ax.contourf(M, L, data, levels=20, cmap='jet', vmin=vmin, vmax=vmax)
+        c = ax.pcolormesh(M, L, data, cmap='jet', vmin=vmin, vmax=vmax, shading='auto')
         ax.set_title(title)
         ax.set_ylabel("Latitude")
         cs.append(c)
@@ -524,7 +613,8 @@ def seasonal_plot():
     cs = []
 
     for ax, (data, title) in zip(axs.ravel(), diff_data):
-        c = ax.contourf(M, L, data, levels=20, cmap='jet', vmin=vmin, vmax=vmax)
+        #c = ax.contourf(M, L, data, levels=20, cmap='jet', vmin=vmin, vmax=vmax)
+        c = ax.pcolormesh(M, L, data, cmap='jet', vmin=vmin, vmax=vmax, shading='auto')
         ax.set_title(title)
         ax.set_xlabel("Month")
         ax.set_ylabel("Latitude")
@@ -549,4 +639,52 @@ def seasonal_plot():
     cbar.set_label(r"mean $\mathrm{XN}_2\mathrm{O}$ in ppb")
 
     outpath_diff = f'pictures/seasonal_diff_{x_res}x{y_res}.png'
+    plt.savefig(outpath_diff)
+
+    ################# Plot Seasonal: Plot diffs IASI CAMS #################
+
+    diff_data = [
+        (all_cams_zonal - all_iasi_zonal, "CAMS - IASI Zonal Mean"),
+        (all_cams_iasi_zonal - all_iasi_zonal, "CAMS (IASI AVK) - IASI Zonal Mean")
+    ]
+
+    vmin = min(np.nanmin(d[0]) for d in diff_data)
+    vmax = max(np.nanmax(d[0]) for d in diff_data)
+
+    # Create diverging colormap: blue-white-red
+    cmap = plt.cm.bwr.copy()
+    cmap.set_bad("gray")  # gray background for NaNs
+
+    # Normalize so that 0 is white
+    norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
+
+    fig, axs = plt.subplots(1, 2, figsize=(12, 4), sharex=True, sharey=True)
+    cs = []
+
+    for ax, (data, title) in zip(axs.ravel(), diff_data):
+        c = ax.pcolormesh(M, L, data, cmap=cmap, norm=norm, shading='auto')
+        ax.set_title(title)
+        ax.set_xlabel("Month")
+        ax.set_ylabel("Latitude")
+        cs.append(c)
+
+    xticks = [1, 3, 6, 9, 12]
+
+    for ax in axs.ravel():
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xticks)
+        ax.tick_params(axis='x', labelbottom=True)  # force labels to show
+
+    # Adjust layout to make space for colorbar
+    fig.subplots_adjust(right=0.88)
+
+    # Add overall title
+    fig.suptitle("Seasonal Diff Zonal Means for 2020", fontsize=16)
+
+    # Add colorbar to the right of all subplots
+    cbar_ax = fig.add_axes([0.90, 0.15, 0.02, 0.7])
+    cbar = fig.colorbar(cs[0], cax=cbar_ax)
+    cbar.set_label(r"mean $\mathrm{XN}_2\mathrm{O}$ in ppb")
+
+    outpath_diff = f'pictures/seasonal_diff_cams-iasi_{x_res}x{y_res}.png'
     plt.savefig(outpath_diff)

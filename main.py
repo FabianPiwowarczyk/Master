@@ -45,12 +45,12 @@ def printvar(var_name):
 #plot_mean_columns(month=1, coord=[(0, 5), (10, 15)])
 
 
-from convert_func import convert
-convert()
+#from convert_func import convert
+#convert()
 
 import gridding
-gridding.regrid_iasi()
-#gridding.replot_all()
+#gridding.regrid_iasi()
+gridding.replot_all()
 
 #from gridding.plot_lv3 import seasonal_plot
 #seasonal_plot()
@@ -89,8 +89,7 @@ gridding.regrid_iasi()
 # ds_cams_iasi = xr.open_dataset(gosat_path.format('cams_iasi', '01', 5, 5, 0))
 #
 # variable_cams_iasi = ds_cams_iasi['mean_tot'].values
-#
-# print(variable_cams_iasi)
+
 
 
 
