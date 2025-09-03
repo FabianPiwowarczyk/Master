@@ -81,6 +81,12 @@ def plot_mean_columns(month, coord):
         (cams_pressure["lat"] >= coord[1][0]) & (cams_pressure["lat"] <= coord[1][1])
         ]
 
+    # Get min and max per column
+    mins = filtered_pre.iloc[:, :-2].min(skipna=True)
+    maxs = filtered_pre.iloc[:, :-2].max(skipna=True)
+
+    print(mins, maxs)
+
     cams_data = filtered_cams.iloc[:, :-2].mean(skipna=True).to_numpy()
     cams_pressure = filtered_pre.iloc[:, :-2].mean(skipna=True).to_numpy() / 100
 
@@ -175,6 +181,12 @@ def read_iasi(month, coord):
 
         filtered = pd.concat([filtered, new_filtered])
         pre_fil = pd.concat([pre_fil, pre_fil_new])
+
+    # Get min and max per column
+    mins = pre_fil.iloc[:, :-2].min(skipna=True)
+    maxs = pre_fil.iloc[:, :-2].max(skipna=True)
+
+    print(mins, maxs)
 
     means_array = filtered.iloc[:, :-2].mean(skipna=True).to_numpy() * 1000
     pressure_array = pre_fil.iloc[:, :-2].mean(skipna=True).to_numpy()

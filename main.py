@@ -41,8 +41,9 @@ def printvar(var_name):
 #printvar('musica_fit_quality_flag')
 #printvar('musica_ghg')
 
-#from CAMS.mean_cols import plot_mean_columns
-#plot_mean_columns(month=1, coord=[(0, 5), (10, 15)])
+from CAMS.mean_cols import plot_mean_columns
+plot_mean_columns(month=1, coord=[(-180, 180), (-2.5, 2.5)])
+plot_mean_columns(month=1, coord=[(-180, 180), (80, 85)])
 
 
 #from convert_func import convert
@@ -50,7 +51,7 @@ def printvar(var_name):
 
 import gridding
 #gridding.regrid_iasi()
-gridding.replot_all()
+#gridding.replot_all()
 
 #from gridding.plot_lv3 import seasonal_plot
 #seasonal_plot()
