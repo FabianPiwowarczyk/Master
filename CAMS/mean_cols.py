@@ -81,28 +81,37 @@ def plot_mean_columns(month, coord):
         (cams_pressure["lat"] >= coord[1][0]) & (cams_pressure["lat"] <= coord[1][1])
         ]
 
-    # Get min and max per column
-    mins = filtered_pre.iloc[:, :-2].min(skipna=True)
-    maxs = filtered_pre.iloc[:, :-2].max(skipna=True)
+    p_min = np.nanmin(filtered_pre.iloc[:, :-2].to_numpy())
+    p_max = np.nanmax(filtered_pre.iloc[:, :-2].to_numpy())
 
-    print(mins, maxs)
+    # Define log-spaced pressure grid (e.g. 40 levels)
+    pressure_grid_cams = np.logspace(np.log10(p_max), np.log10(p_min), 40)
 
-    cams_data = filtered_cams.iloc[:, :-2].mean(skipna=True).to_numpy()
-    cams_pressure = filtered_pre.iloc[:, :-2].mean(skipna=True).to_numpy() / 100
+    interp_profiles = []
+
+    print('Interpolating CAMS:')
+    for i in tqdm(range(filtered_cams.shape[0])):
+        p_profile = filtered_pre.iloc[i, :-2].to_numpy()
+        n2o_profile = filtered_cams.iloc[i, :-2].to_numpy()
+
+        interp_n2o = np.interp(pressure_grid_cams, p_profile[::-1], n2o_profile[::-1])
+        interp_profiles.append(interp_n2o)
+
+    interp_profiles = np.array(interp_profiles)
+    cams_data = np.nanmean(interp_profiles, axis=0)
+    cams_pressure = pressure_grid_cams / 100
 
     iasi_data, iasi_pressure = read_iasi(month, coord)
 
     fig = figure()
-    plt.plot(cams_data, cams_pressure, label='CAMS')
-    plt.plot(iasi_data, iasi_pressure, label='IASI')
+    plt.plot(cams_data, np.log(cams_pressure), label='CAMS')
+    plt.plot(iasi_data, np.log(iasi_pressure), label='IASI')
 
     plt.gca().invert_yaxis()  # invert the y-axis
     plt.xlabel('Data ppb')
     plt.ylabel('Pressure hPa')
     plt.legend()
     plt.show()
-
-
 
 
 def read_iasi(month, coord):
@@ -182,15 +191,42 @@ def read_iasi(month, coord):
         filtered = pd.concat([filtered, new_filtered])
         pre_fil = pd.concat([pre_fil, pre_fil_new])
 
-    # Get min and max per column
-    mins = pre_fil.iloc[:, :-2].min(skipna=True)
-    maxs = pre_fil.iloc[:, :-2].max(skipna=True)
+    filtered_plots = filtered.iloc[:, :-2].to_numpy()
+    pre_fil_plots = pre_fil.iloc[:, :-2].to_numpy()
 
-    print(mins, maxs)
+    fig = plt.figure()
+    for i in range(filtered_plots.shape[0]):
+        plt.plot(filtered_plots[i, :], np.log(pre_fil_plots[i, :]))
 
-    means_array = filtered.iloc[:, :-2].mean(skipna=True).to_numpy() * 1000
-    pressure_array = pre_fil.iloc[:, :-2].mean(skipna=True).to_numpy()
-    return means_array, pressure_array
+    plt.gca().invert_yaxis()  # invert the y-axis
+    plt.xlabel('Data ppb')
+    plt.ylabel('Pressure hPa')
+    plt.show()
+
+    p_min = np.nanmin(pre_fil.iloc[:, :-2].to_numpy())
+    p_max = np.nanmax(pre_fil.iloc[:, :-2].to_numpy())
+
+    # Define log-spaced pressure grid (e.g. 40 levels)
+    pressure_grid = np.logspace(np.log10(p_max), np.log10(p_min), 40)
+
+    interp_profiles = []
+
+    print('Interpolating IASI:')
+    for i in tqdm(range(filtered.shape[0])):
+        p_profile = pre_fil.iloc[i, :-2].to_numpy()
+        n2o_profile = filtered.iloc[i, :-2].to_numpy()
+
+        mask = ~np.isnan(p_profile) & ~np.isnan(n2o_profile)
+        if np.sum(mask) < 2:  # need at least 2 points to interpolate
+            continue
+
+        interp_n2o = np.interp(pressure_grid, p_profile[mask][::-1], n2o_profile[mask][::-1])
+        interp_profiles.append(interp_n2o)
+
+    interp_profiles = np.array(interp_profiles)
+    mean_profile = np.nanmean(interp_profiles, axis=0) * 1000
+
+    return mean_profile, pressure_grid
 
 
 def layer_mid_pressure(P):

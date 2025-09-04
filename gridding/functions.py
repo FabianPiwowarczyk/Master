@@ -51,23 +51,23 @@ def regrid_iasi():
     # monthly_mean(x_res=5, y_res=5, th=0,
     #              dir_path='gosat_data/IUP-GHG-L2-N2O-GOSAT2-FOCAL-2020',
     #              tot_var='xn2o', lon_var='longitude', lat_var='latitude', sat='gosat')
-    #
-    # print('Grid gosat data th=4')
-    # monthly_mean(x_res=5, y_res=5, th=4,
-    #              dir_path='gosat_data/IUP-GHG-L2-N2O-GOSAT2-FOCAL-2020',
-    #              tot_var='xn2o', lon_var='longitude', lat_var='latitude', sat='gosat')
 
-    print('Regrid Iasi in 1x1 th=0')
-    print('Normal tot_col')
+    print('Grid gosat data th=2')
+    monthly_mean(x_res=5, y_res=5, th=4,
+                 dir_path='gosat_data/IUP-GHG-L2-N2O-GOSAT2-FOCAL-2020',
+                 tot_var='xn2o', lon_var='longitude', lat_var='latitude', sat='gosat')
+
+    # print('Regrid Iasi in 1x1 th=0')
+    # print('Normal tot_col')
     path = f'/misc/ghgcci7/fabian/iasi_data/2020_'
-    monthly_mean(x_res=1, y_res=1, th=0,
-                 dir_path=path,
-                 tot_var='total_column', lon_var='lon', lat_var='lat', sat='iasi', qf=3)
-
-    print('Method 0 correction')
-    monthly_mean(x_res=1, y_res=1, th=0,
-                 dir_path=path,
-                 tot_var='tc_cor_met0', lon_var='lon', lat_var='lat', sat='iasi', qf=3)
+    # monthly_mean(x_res=1, y_res=1, th=0,
+    #              dir_path=path,
+    #              tot_var='total_column', lon_var='lon', lat_var='lat', sat='iasi', qf=3)
+    #
+    # print('Method 0 correction')
+    # monthly_mean(x_res=1, y_res=1, th=0,
+    #              dir_path=path,
+    #              tot_var='tc_cor_met0', lon_var='lon', lat_var='lat', sat='iasi', qf=3)
 
     print('Regrid Iasi in 5x5 th=0')
     print('Normal tot_col')
@@ -80,13 +80,13 @@ def regrid_iasi():
                  dir_path=path,
                  tot_var='tc_cor_met0', lon_var='lon', lat_var='lat', sat='iasi', qf=3)
 
-    print('Regrid Iasi in 5x5 th=4')
+    print('Regrid Iasi in 5x5 th=10')
     print('Normal tot_col')
-    monthly_mean(x_res=5, y_res=5, th=4,
+    monthly_mean(x_res=5, y_res=5, th=10,
                  dir_path=path,
                  tot_var='total_column', lon_var='lon', lat_var='lat', sat='iasi', qf=3)
 
     print('Method 0 correction')
-    monthly_mean(x_res=5, y_res=5, th=4,
+    monthly_mean(x_res=5, y_res=5, th=10,
                  dir_path=path,
                  tot_var='tc_cor_met0', lon_var='lon', lat_var='lat', sat='iasi', qf=3)

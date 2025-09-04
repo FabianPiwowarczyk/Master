@@ -42,15 +42,13 @@ def printvar(var_name):
 #printvar('musica_ghg')
 
 from CAMS.mean_cols import plot_mean_columns
-plot_mean_columns(month=1, coord=[(-180, 180), (-2.5, 2.5)])
-plot_mean_columns(month=1, coord=[(-180, 180), (80, 85)])
+#plot_mean_columns(month=4, coord=[(-80, -75), (55, 60)])
 
-
-#from convert_func import convert
-#convert()
+from convert_func import convert
+convert()
 
 import gridding
-#gridding.regrid_iasi()
+gridding.regrid_iasi()
 #gridding.replot_all()
 
 #from gridding.plot_lv3 import seasonal_plot
