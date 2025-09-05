@@ -45,7 +45,7 @@ def change_prior(dry_col, pre_lvl, avk_dict, alt_lev, old_prior, gas_lay, org_n2
 
     gosat_pre_lev = np.zeros(len(n2o_prof)+1)  # array for gosat pre levels
     gosat_pre_lev[0] = pre_lvl[0]
-    gosat_pre_lev[-1] = pre_lvl[-1]  # the first and last level are identical by design
+    gosat_pre_lev[-1] = 0
 
     # interpolation
     gosat_pre_lev[1:-1] = np.interp(n_lay, cum_sum_par, pre_lay)

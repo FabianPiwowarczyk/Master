@@ -47,13 +47,13 @@ def replot_all():
 
 def regrid_iasi():
 
-    # print('Grid gosat data th=0')
-    # monthly_mean(x_res=5, y_res=5, th=0,
-    #              dir_path='gosat_data/IUP-GHG-L2-N2O-GOSAT2-FOCAL-2020',
-    #              tot_var='xn2o', lon_var='longitude', lat_var='latitude', sat='gosat')
+    print('Grid gosat data th=0')
+    monthly_mean(x_res=5, y_res=5, th=0,
+                 dir_path='gosat_data/IUP-GHG-L2-N2O-GOSAT2-FOCAL-2020',
+                 tot_var='xn2o', lon_var='longitude', lat_var='latitude', sat='gosat')
 
-    print('Grid gosat data th=2')
-    monthly_mean(x_res=5, y_res=5, th=4,
+    print('Grid gosat data th=3')
+    monthly_mean(x_res=5, y_res=5, th=3,
                  dir_path='gosat_data/IUP-GHG-L2-N2O-GOSAT2-FOCAL-2020',
                  tot_var='xn2o', lon_var='longitude', lat_var='latitude', sat='gosat')
 
