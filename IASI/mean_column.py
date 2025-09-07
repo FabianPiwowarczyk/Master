@@ -14,6 +14,31 @@ from os.path import join
 from .conv_constants import *
 
 
+def _coord_tag(coord):
+    # coord = [(lon_min, lon_max), (lat_min, lat_max)]
+    (lon0, lon1), (lat0, lat1) = coord
+    # make filenames safe (e.g., minus signs)
+    def s(v):
+        return str(v).replace('.', 'p').replace('-', 'm')
+    return f"lon_{s(lon0)}_{s(lon1)}__lat_{s(lat0)}_{s(lat1)}"
+
+def _outfile(month, coord, outdir="derived/apri_means"):
+    os.makedirs(outdir, exist_ok=True)
+    return os.path.join(outdir, f"apri_means_m{month:02d}__{_coord_tag(coord)}.txt")
+
+def _save_txt(path, pressure_hpa, mean_iasi_ppb, mean_gosat_ppb):
+    arr = np.column_stack([pressure_hpa, mean_iasi_ppb, mean_gosat_ppb])
+    header = "pressure_hPa mean_iasi_ppb mean_gosat_ppb"
+    np.savetxt(path, arr, fmt="%.6f", header=header)
+
+def _load_txt(path):
+    arr = np.loadtxt(path, ndmin=2)
+    # handle case of single row
+    pressure_hpa = arr[:, 0]
+    mean_iasi_ppb = arr[:, 1]
+    mean_gosat_ppb = arr[:, 2]
+    return pressure_hpa, mean_iasi_ppb, mean_gosat_ppb
+
 def mean_apris():
     data_path = '/misc/hypatia/data/IASI/L2_MUSICA/V3.30/MetopA/2020/{:02d}/'
     months = [2, 7, 11]  # columns
@@ -33,19 +58,27 @@ def mean_apris():
         days_paths.sort()
 
         for i, coord in enumerate(coords):  # loop over coords (rows)
-            # Collect profiles
-            iasi_profiles, gosat_profiles, pre_lev = iasi_day_profiles(days_paths[0], quality_flag, coord)
-            for dir in days_paths[1:]:
-                new_iasi, new_gosat, new_pre = iasi_day_profiles(dir, quality_flag, coord)
-                iasi_profiles = np.vstack([iasi_profiles, new_iasi])
-                gosat_profiles = np.vstack([gosat_profiles, new_gosat])
-                pre_lev = np.vstack([pre_lev, new_pre])
+            # ---- Load from TXT if available ----
+            out_txt = _outfile(month, coord)
+            if os.path.exists(out_txt):
+                pressure_grid, mean_iasi, mean_gosat = _load_txt(out_txt)
+            else:
+                # ---- Collect and compute means ----
+                iasi_profiles, gosat_profiles, pre_lev = iasi_day_profiles(days_paths[0], quality_flag, coord)
+                for dir in days_paths[1:]:
+                    new_iasi, new_gosat, new_pre = iasi_day_profiles(dir, quality_flag, coord)
+                    iasi_profiles = np.vstack([iasi_profiles, new_iasi])
+                    gosat_profiles = np.vstack([gosat_profiles, new_gosat])
+                    pre_lev = np.vstack([pre_lev, new_pre])
 
-            # Interpolate and average
-            mean_iasi, pressure_grid = inter_profiles(iasi_profiles, pre_lev)
-            mean_gosat, _ = inter_profiles(gosat_profiles, pre_lev)
+                # Interpolate and average
+                mean_iasi, pressure_grid = inter_profiles(iasi_profiles, pre_lev)
+                mean_gosat, _ = inter_profiles(gosat_profiles, pre_lev)
 
-            # Plot into subplot
+                # ---- Save to TXT for future runs ----
+                _save_txt(out_txt, pressure_grid, mean_iasi, mean_gosat)
+
+            # ---- Plot into subplot ----
             ax = axes[i, j]
             ax.plot(mean_iasi, pressure_grid, label="IASI")
             ax.plot(mean_gosat, pressure_grid, label="GOSAT")
@@ -64,11 +97,68 @@ def mean_apris():
     # Legend only once (outside grid)
     handles, labels = axes[0, 0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper right")
-
     fig.tight_layout()
 
-    outpath = f'pictures/apri_vergleich_iasi_gosat.png'
+    outpath = 'pictures/apri_vergleich_iasi_gosat.png'
+    os.makedirs(os.path.dirname(outpath), exist_ok=True)
     plt.savefig(outpath)
+
+
+# def mean_apris():
+#     data_path = '/misc/hypatia/data/IASI/L2_MUSICA/V3.30/MetopA/2020/{:02d}/'
+#     months = [2, 7, 11]  # columns
+#     coords = [
+#         [(-105, -100), (35, 40)],
+#         [(35, 40), (-2.5, 2.5)],
+#         [(135, 140), (30, 35)]
+#     ]  # rows
+#     quality_flag = 3
+#
+#     # Prepare figure
+#     fig, axes = plt.subplots(len(coords), len(months), figsize=(15, 12), sharex=True, sharey=True)
+#
+#     for j, month in enumerate(months):  # loop over months (columns)
+#         month_path = data_path.format(month)
+#         days_paths = [f.path for f in os.scandir(month_path) if f.is_dir()]
+#         days_paths.sort()
+#
+#         for i, coord in enumerate(coords):  # loop over coords (rows)
+#             # Collect profiles
+#             iasi_profiles, gosat_profiles, pre_lev = iasi_day_profiles(days_paths[0], quality_flag, coord)
+#             for dir in days_paths[1:]:
+#                 new_iasi, new_gosat, new_pre = iasi_day_profiles(dir, quality_flag, coord)
+#                 iasi_profiles = np.vstack([iasi_profiles, new_iasi])
+#                 gosat_profiles = np.vstack([gosat_profiles, new_gosat])
+#                 pre_lev = np.vstack([pre_lev, new_pre])
+#
+#             # Interpolate and average
+#             mean_iasi, pressure_grid = inter_profiles(iasi_profiles, pre_lev)
+#             mean_gosat, _ = inter_profiles(gosat_profiles, pre_lev)
+#
+#             # Plot into subplot
+#             ax = axes[i, j]
+#             ax.plot(mean_iasi, pressure_grid, label="IASI")
+#             ax.plot(mean_gosat, pressure_grid, label="GOSAT")
+#             ax.invert_yaxis()
+#
+#             # Label axes
+#             ax.set_xlabel("N₂O (ppb)")
+#             if j == 0:
+#                 lon_rng, lat_rng = coord
+#                 ax.set_ylabel(f"Lon: {lon_rng[0]}–{lon_rng[1]}\nLat: {lat_rng[0]}–{lat_rng[1]}\nPressure (hPa)")
+#
+#             # Titles for months
+#             if i == 0:
+#                 ax.set_title(f"Month {month}")
+#
+#     # Legend only once (outside grid)
+#     handles, labels = axes[0, 0].get_legend_handles_labels()
+#     fig.legend(handles, labels, loc="upper right")
+#
+#     fig.tight_layout()
+#
+#     outpath = f'pictures/apri_vergleich_iasi_gosat.png'
+#     plt.savefig(outpath)
 
 
 def conv_iasi_time_readable(time):
