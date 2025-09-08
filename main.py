@@ -40,7 +40,7 @@ def printvar(var_name):
 
 from IASI.mean_column import mean_apris
 
-mean_apris()
+# mean_apris()
 
 #printvar('musica_fit_quality_flag')
 #printvar('musica_ghg')
@@ -49,8 +49,8 @@ from CAMS.mean_cols import plot_mean_columns
 #plot_mean_columns(month=4, coord=[(-80, -75), (55, 60)])
 
 
-#from convert_func import convert
-#convert()
+from convert_func import convert
+convert()
 
 #import gridding
 #gridding.regrid_iasi()

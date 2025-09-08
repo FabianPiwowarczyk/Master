@@ -17,7 +17,7 @@ def main():
     #              tot_var='tc_cor_met0', lon_var='lon', lat_var='lat', sat='iasi', qf=3)
 
     import CAMS
-    CAMS.cams_monthly_means(x_res=5, y_res=5, months=[1, 12])
+    CAMS.cams_monthly_means(x_res=5, y_res=5, months=[5, 12])
 
 if __name__ == "__main__":
     main()

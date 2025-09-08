@@ -22,14 +22,17 @@ def _coord_tag(coord):
         return str(v).replace('.', 'p').replace('-', 'm')
     return f"lon_{s(lon0)}_{s(lon1)}__lat_{s(lat0)}_{s(lat1)}"
 
+
 def _outfile(month, coord, outdir="derived/apri_means"):
     os.makedirs(outdir, exist_ok=True)
     return os.path.join(outdir, f"apri_means_m{month:02d}__{_coord_tag(coord)}.txt")
+
 
 def _save_txt(path, pressure_hpa, mean_iasi_ppb, mean_gosat_ppb):
     arr = np.column_stack([pressure_hpa, mean_iasi_ppb, mean_gosat_ppb])
     header = "pressure_hPa mean_iasi_ppb mean_gosat_ppb"
     np.savetxt(path, arr, fmt="%.6f", header=header)
+
 
 def _load_txt(path):
     arr = np.loadtxt(path, ndmin=2)
@@ -39,13 +42,14 @@ def _load_txt(path):
     mean_gosat_ppb = arr[:, 2]
     return pressure_hpa, mean_iasi_ppb, mean_gosat_ppb
 
+
 def mean_apris():
     data_path = '/misc/hypatia/data/IASI/L2_MUSICA/V3.30/MetopA/2020/{:02d}/'
     months = [2, 7, 11]  # columns
     coords = [
         [(-105, -100), (35, 40)],
         [(35, 40), (-2.5, 2.5)],
-        [(135, 140), (30, 35)]
+        [(135, 140), (-35, -30)]
     ]  # rows
     quality_flag = 3
 
@@ -61,6 +65,7 @@ def mean_apris():
             # ---- Load from TXT if available ----
             out_txt = _outfile(month, coord)
             if os.path.exists(out_txt):
+                print(out_txt, 'Already exists.')
                 pressure_grid, mean_iasi, mean_gosat = _load_txt(out_txt)
             else:
                 # ---- Collect and compute means ----
@@ -84,6 +89,31 @@ def mean_apris():
             ax.plot(mean_gosat, pressure_grid, label="GOSAT")
             ax.invert_yaxis()
 
+            # ============================== ADDED ↓↓↓
+            # Annotation: difference of the FIRST values (GOSAT − IASI).
+            # Falls back to the first finite pair if index 0 is NaN.
+            idx0 = 0
+            diff_0 = mean_gosat[idx0] - mean_iasi[idx0]
+            note = ""
+            if not np.isfinite(diff_0):
+                valid = np.where(np.isfinite(mean_gosat) & np.isfinite(mean_iasi))[0]
+                if valid.size:
+                    idx0 = valid[0]
+                    diff_0 = mean_gosat[idx0] - mean_iasi[idx0]
+                    note = f" (first finite idx={idx0})"
+                else:
+                    note = " (no finite overlap)"
+            # bottom-left
+            ax.text(
+                0.03, 0.05,  # << moved near bottom-left
+                f"Δ(GOSAT-2 minus IASI) ground = {diff_0:.1f} ppb{note}",
+                transform=ax.transAxes, ha='left', va='bottom',
+                fontsize=9, bbox=dict(boxstyle='round', fc='white', alpha=0.7, ec='none')
+            )
+            # (optional) for absolute difference instead, use:
+            # diff_0 = np.abs(mean_gosat[idx0] - mean_iasi[idx0])
+            # ============================== ADDED ↑↑↑
+
             # Label axes
             ax.set_xlabel("N₂O (ppb)")
             if j == 0:
@@ -102,63 +132,6 @@ def mean_apris():
     outpath = 'pictures/apri_vergleich_iasi_gosat.png'
     os.makedirs(os.path.dirname(outpath), exist_ok=True)
     plt.savefig(outpath)
-
-
-# def mean_apris():
-#     data_path = '/misc/hypatia/data/IASI/L2_MUSICA/V3.30/MetopA/2020/{:02d}/'
-#     months = [2, 7, 11]  # columns
-#     coords = [
-#         [(-105, -100), (35, 40)],
-#         [(35, 40), (-2.5, 2.5)],
-#         [(135, 140), (30, 35)]
-#     ]  # rows
-#     quality_flag = 3
-#
-#     # Prepare figure
-#     fig, axes = plt.subplots(len(coords), len(months), figsize=(15, 12), sharex=True, sharey=True)
-#
-#     for j, month in enumerate(months):  # loop over months (columns)
-#         month_path = data_path.format(month)
-#         days_paths = [f.path for f in os.scandir(month_path) if f.is_dir()]
-#         days_paths.sort()
-#
-#         for i, coord in enumerate(coords):  # loop over coords (rows)
-#             # Collect profiles
-#             iasi_profiles, gosat_profiles, pre_lev = iasi_day_profiles(days_paths[0], quality_flag, coord)
-#             for dir in days_paths[1:]:
-#                 new_iasi, new_gosat, new_pre = iasi_day_profiles(dir, quality_flag, coord)
-#                 iasi_profiles = np.vstack([iasi_profiles, new_iasi])
-#                 gosat_profiles = np.vstack([gosat_profiles, new_gosat])
-#                 pre_lev = np.vstack([pre_lev, new_pre])
-#
-#             # Interpolate and average
-#             mean_iasi, pressure_grid = inter_profiles(iasi_profiles, pre_lev)
-#             mean_gosat, _ = inter_profiles(gosat_profiles, pre_lev)
-#
-#             # Plot into subplot
-#             ax = axes[i, j]
-#             ax.plot(mean_iasi, pressure_grid, label="IASI")
-#             ax.plot(mean_gosat, pressure_grid, label="GOSAT")
-#             ax.invert_yaxis()
-#
-#             # Label axes
-#             ax.set_xlabel("N₂O (ppb)")
-#             if j == 0:
-#                 lon_rng, lat_rng = coord
-#                 ax.set_ylabel(f"Lon: {lon_rng[0]}–{lon_rng[1]}\nLat: {lat_rng[0]}–{lat_rng[1]}\nPressure (hPa)")
-#
-#             # Titles for months
-#             if i == 0:
-#                 ax.set_title(f"Month {month}")
-#
-#     # Legend only once (outside grid)
-#     handles, labels = axes[0, 0].get_legend_handles_labels()
-#     fig.legend(handles, labels, loc="upper right")
-#
-#     fig.tight_layout()
-#
-#     outpath = f'pictures/apri_vergleich_iasi_gosat.png'
-#     plt.savefig(outpath)
 
 
 def conv_iasi_time_readable(time):
@@ -189,30 +162,30 @@ def read_iasi(path):
     data['num_lev'] = dataset.variables['musica_nol'][:]
     data['apri'] = dataset.variables['musica_ghg_apriori'][:, 0]
 
-    data['avk_rank'] = dataset.variables['musica_ghg_avk_rank'][:]
-
-    # make that shit stackable
-    if dataset.variables['musica_ghg_avk_val'][:, :].shape[1] != 16:
-        profile_count = dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :].shape[0]
-        nan_count = 16 - dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :].shape[1]
-        nol_count = dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :].shape[2]
-
-        nan_slice_val = np.ma.masked_array(np.full((profile_count, nan_count), np.nan))
-        nan_slice_vec = np.ma.masked_array(np.full((profile_count, nan_count, nol_count), np.nan))
-
-        data['avk_val'] = np.concatenate(
-            [dataset.variables['musica_ghg_avk_val'][:, :], nan_slice_val], axis=1)
-
-        data['avk_lvec'] = np.concatenate(
-            [dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :], nan_slice_vec], axis=1)
-
-        data['avk_rvec'] = np.concatenate(
-            [dataset.variables['musica_ghg_avk_rvec'][:, 0, :, :], nan_slice_vec], axis=1)
-
-    else:
-        data['avk_val'] = dataset.variables['musica_ghg_avk_val'][:, :]
-        data['avk_lvec'] = dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :]
-        data['avk_rvec'] = dataset.variables['musica_ghg_avk_rvec'][:, 0, :, :]
+    # data['avk_rank'] = dataset.variables['musica_ghg_avk_rank'][:]
+    #
+    # # make that shit stackable
+    # if dataset.variables['musica_ghg_avk_val'][:, :].shape[1] != 16:
+    #     profile_count = dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :].shape[0]
+    #     nan_count = 16 - dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :].shape[1]
+    #     nol_count = dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :].shape[2]
+    #
+    #     nan_slice_val = np.ma.masked_array(np.full((profile_count, nan_count), np.nan))
+    #     nan_slice_vec = np.ma.masked_array(np.full((profile_count, nan_count, nol_count), np.nan))
+    #
+    #     data['avk_val'] = np.concatenate(
+    #         [dataset.variables['musica_ghg_avk_val'][:, :], nan_slice_val], axis=1)
+    #
+    #     data['avk_lvec'] = np.concatenate(
+    #         [dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :], nan_slice_vec], axis=1)
+    #
+    #     data['avk_rvec'] = np.concatenate(
+    #         [dataset.variables['musica_ghg_avk_rvec'][:, 0, :, :], nan_slice_vec], axis=1)
+    #
+    # else:
+    #     data['avk_val'] = dataset.variables['musica_ghg_avk_val'][:, :]
+    #     data['avk_lvec'] = dataset.variables['musica_ghg_avk_lvec'][:, 0, :, :]
+    #     data['avk_rvec'] = dataset.variables['musica_ghg_avk_rvec'][:, 0, :, :]
 
     dataset.close()
 
@@ -379,7 +352,7 @@ def inter_profiles(profiles, pre_lev):
     interp_profiles = np.array(interp_profiles)
     mean_profile = np.nanmean(interp_profiles, axis=0)
 
-    return mean_profile, pressure_grid
+    return mean_profile * 1000, pressure_grid / 100
 
 
 

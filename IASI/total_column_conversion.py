@@ -3,6 +3,7 @@ import ECMWF_Read_V3_5 as ecmwf
 from .reading import read_all_iasi
 from tqdm import tqdm
 from .chng_prior import change_prior
+import math
 
 from .conv_constants import *
 
@@ -191,6 +192,10 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
 
     for row in tqdm(items):
 
+        coord = [(35, 40), (-2.5, 2.5)]  # Kenia
+        if not point_in_box(iasi_data['lon'][row], iasi_data['lat'][row], coord):
+            continue
+
         col_avk_dict = {
         'avk_rank': iasi_data['avk_rank'][row],
         'avk_val': iasi_data['avk_val'][row],
@@ -228,10 +233,12 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
 
         tot_col[row] = tc
 
+        time = iasi_data['readable_time']
         # prior correction and avk calculation
         met0_tc[row], apr_gosat[row, nan_count:29], iasi_avk[row, nan_count:29, nan_count:29] = change_prior(dry_col,
                                     col_dic['pre_lev'], col_avk_dict, col_dic['alt_lev'],
-                                    col_dic['apri'], n2o_lay, col_dic['n2o_lev'])
+                                    col_dic['apri'], n2o_lay, col_dic['n2o_lev'],
+                                    lon=iasi_data['lon'][row], lat=row_lat, time=time)
 
         # additional apriori total column
         apri_lay = lev2lay(col_dic['apri'])
@@ -252,3 +259,46 @@ def data2total_col(path, date, i, date_tuples, org_path, quality_flag):
     print('Returning total columns.')
 
     return iasi_data
+
+
+def point_in_box(lon, lat, box, *, inclusive=True, dateline_wrap=True):
+    """
+    Return True if (lon, lat) lies inside the grid box.
+
+    Parameters
+    ----------
+    lon, lat : float
+        Point coordinates (same longitude convention as `box`).
+    box : list/tuple
+        [(lon_min, lon_max), (lat_min, lat_max)]
+    inclusive : bool, default True
+        If True, include the edges (>= and <=). If False, use strict > and <.
+    dateline_wrap : bool, default True
+        If True and lon_min > lon_max, treat the box as wrapping across the dateline.
+
+    Notes
+    -----
+    - Assumes `lon` and the box use the same convention (either -180..180 or 0..360).
+    - Returns False if lon/lat are NaN.
+    """
+
+    if math.isnan(lon) or math.isnan(lat):
+        return False
+
+    (lon_min, lon_max), (lat_min, lat_max) = box
+
+    if inclusive:
+        cmp_ge, cmp_le, cmp_gt, cmp_lt = (lambda a,b: a>=b, lambda a,b: a<=b, lambda a,b: a>b, lambda a,b: a<b)
+    else:
+        cmp_ge, cmp_le, cmp_gt, cmp_lt = (lambda a,b: a>b,  lambda a,b: a<b,  lambda a,b: a>b, lambda a,b: a<b)
+
+    # Longitude check (handle dateline-crossing boxes if requested)
+    if dateline_wrap and lon_min > lon_max:
+        lon_ok = cmp_ge(lon, lon_min) or cmp_le(lon, lon_max)
+    else:
+        lon_ok = cmp_ge(lon, lon_min) and cmp_le(lon, lon_max)
+
+    # Latitude check
+    lat_ok = cmp_ge(lat, lat_min) and cmp_le(lat, lat_max)
+
+    return bool(lon_ok and lat_ok)

@@ -4,9 +4,11 @@ from dask.dot import label
 from scipy.optimize import curve_fit
 
 
-def change_prior(dry_col, pre_lvl, avk_dict, alt_lev, old_prior, gas_lay, org_n2o_lev):
+def change_prior(dry_col, pre_lvl, avk_dict, alt_lev, old_prior, gas_lay, org_n2o_lev, lon, lat, time):
 
     avk = calc_avk(avk_dict=avk_dict)
+
+    plot_avk_rows(avk, alt_lev, lon, lat, time)
 
     xn2o = 330.e-3  # ppm
     n2o_prof = np.array([0.31999999,
@@ -350,3 +352,36 @@ def plot_avk(avk, alt_lev):
 
     plt.tight_layout()
     plt.show()
+
+
+def plot_avk_rows(avk, alt_lev, lon, lat, time):
+    # Prep (same as before)
+    y_alt = alt_lev[:] / 1000  # y-axis = altitude levels
+    nlev = avk.shape[0]
+    max_row = np.unravel_index(np.argmax(avk), avk.shape)[0]
+
+    # Single plot (was axes[1, 1])
+    fig, ax = plt.subplots(figsize=(6, 6))
+
+    for i in range(nlev):
+        x_row = avk[i, :][::-1]  # row i, reversed on x like before
+        if i == max_row:
+            label_str = rf'height level: {nlev - 1 - i}, altitude {y_alt[::-1][i]:.2f}$\mathrm{{\,km}}$'
+            ax.plot(x_row, y_alt, label=label_str)
+        else:
+            ax.plot(x_row, y_alt)
+
+    print(time)
+
+    ax.set_title(f"AVK rows height levels {nlev}")
+    ax.set_xlabel("AVK in log-space")
+    ax.set_ylabel("Altitude in km")
+    ax.legend()
+
+    plt.tight_layout()
+
+    outpath = 'pictures/AVK_Kenia_IASI.png'
+    plt.savefig(outpath)
+
+    import sys
+    sys.exit()

@@ -138,7 +138,11 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
                 n2o_iasi_lev = np.full((iasi_pre.shape[0]), np.nan)
                 # edge cases for iasi and cams ground and top of atmos. not aligning
                 n2o_iasi_lev[np.where(cams_pre_lay[0] < iasi_pre)[0]] = cams_n2o_lay[0]
-                n2o_iasi_lev[np.where(cams_pre_lay[-1] > iasi_pre)[0]] = cams_n2o_lay[-1]
+
+                if cams_n2o_lay[-1] == 0:
+                    n2o_iasi_lev[np.where(cams_pre_lay[-1] > iasi_pre)[0]] = 10e-10
+                else:
+                    n2o_iasi_lev[np.where(cams_pre_lay[-1] > iasi_pre)[0]] = cams_n2o_lay[-1]
 
                 # interpolate n2o ppm values for iasi lev. All flipped bc np.interp needs ascending values
                 n2o_iasi_lev[np.where(np.isnan(n2o_iasi_lev))[0][::-1]] = np.interp(

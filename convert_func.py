@@ -29,7 +29,11 @@ def convert():
         #out_path = f'/data/Data/IASI_N2O/2020_{date[0]}_{date[1]}_qf{quality_flag}.nc'
         out_path = f'/misc/ghgcci7/fabian/iasi_data/2020_{date[0]}_{date[1]}_qf{quality_flag}.nc'
 
-        if os.path.exists(out_path):
+        if int(date[0]) != 2:
+            continue
+
+        # if os.path.exists(out_path):
+        if not os.path.exists(out_path):
             print('File: ', out_path, ' already exists.')
         else:
             path = join(data_path, str(date[0]), str(date[1]))
