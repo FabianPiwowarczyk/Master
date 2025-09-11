@@ -77,7 +77,7 @@ def plot_lv3_data(x_res, y_res, th, dir_path, sat, var='mean_tot', vmin=None, vm
         plt.savefig(outpath)
 
 
-def combined_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
+def combined_plot(x_res, y_res, th_iasi, th_gosat, dir_path, var, qf, vmin=None, vmax=None,
                   met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0):
 
     months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
@@ -85,11 +85,11 @@ def combined_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
     norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)  # norm for colorbar
 
     for m in months:
-        ds_iasi = xr.open_dataset(dir_path.format('iasi', m, x_res, y_res, th, qf))
-        ds_met = xr.open_dataset(met_path.format('iasi', met, m, x_res, y_res, th, qf))
+        ds_iasi = xr.open_dataset(dir_path.format('iasi', m, x_res, y_res, th_iasi, qf))
+        ds_met = xr.open_dataset(met_path.format('iasi', met, m, x_res, y_res, th_iasi, qf))
 
         gosat_path = 'monthly_means/{}_{}_{}x{}_th{}.nc'
-        ds_gosat = xr.open_dataset(gosat_path.format('gosat', m, x_res, y_res, th))
+        ds_gosat = xr.open_dataset(gosat_path.format('gosat', m, x_res, y_res, th_gosat))
 
         lon_iasi = ds_iasi['lon_cen'].values
         lat_iasi = ds_iasi['lat_cen'].values
@@ -200,20 +200,20 @@ def combined_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         plt.savefig(outpath)
 
 
-def zonal_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
+def zonal_plot(x_res, y_res, th_iasi, th_gosat, th_cams, dir_path, var, qf, vmin=None, vmax=None,
                   met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0):
 
     months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
 
     for m in months:
-        ds_iasi = xr.open_dataset(dir_path.format('iasi', m, x_res, y_res, th, qf))
-        ds_met = xr.open_dataset(met_path.format('iasi', met, m, x_res, y_res, th, qf))
+        ds_iasi = xr.open_dataset(dir_path.format('iasi', m, x_res, y_res, th_iasi, qf))
+        ds_met = xr.open_dataset(met_path.format('iasi', met, m, x_res, y_res, th_iasi, qf))
 
         gosat_path = 'monthly_means/{}_{}_{}x{}_th{}.nc'
-        ds_gosat = xr.open_dataset(gosat_path.format('gosat', m, x_res, y_res, th))
+        ds_gosat = xr.open_dataset(gosat_path.format('gosat', m, x_res, y_res, th_gosat))
 
-        ds_cams = xr.open_dataset(gosat_path.format('cams', m, x_res, y_res, th))
-        ds_cams_iasi = xr.open_dataset(gosat_path.format('cams_iasi', m, x_res, y_res, th))
+        ds_cams = xr.open_dataset(gosat_path.format('cams', m, x_res, y_res, th_cams))
+        ds_cams_iasi = xr.open_dataset(gosat_path.format('cams_iasi', m, x_res, y_res, th_cams))
 
         lat_iasi = ds_iasi['lat_cen'].values
 
@@ -295,7 +295,7 @@ def zonal_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
         plt.savefig(outpath)
 
 
-def dif_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
+def dif_plot(x_res, y_res, th_iasi, th_gosat, th_cams, dir_path, var, qf, vmin=None, vmax=None,
                   met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0):
 
     months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
@@ -303,14 +303,14 @@ def dif_plot(x_res, y_res, th, dir_path, var, qf, vmin=None, vmax=None,
     norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)  # norm for colorbar
 
     for m in months:
-        ds_iasi = xr.open_dataset(dir_path.format('iasi', m, x_res, y_res, th, qf))
-        ds_met = xr.open_dataset(met_path.format('iasi', met, m, x_res, y_res, th, qf))
+        ds_iasi = xr.open_dataset(dir_path.format('iasi', m, x_res, y_res, th_iasi, qf))
+        ds_met = xr.open_dataset(met_path.format('iasi', met, m, x_res, y_res, th_iasi, qf))
 
         gosat_path = 'monthly_means/{}_{}_{}x{}_th{}.nc'
-        ds_gosat = xr.open_dataset(gosat_path.format('gosat', m, x_res, y_res, th))
+        ds_gosat = xr.open_dataset(gosat_path.format('gosat', m, x_res, y_res, th_gosat))
 
-        ds_cams = xr.open_dataset(gosat_path.format('cams', m, x_res, y_res, th))
-        ds_cams_iasi = xr.open_dataset(gosat_path.format('cams_iasi', m, x_res, y_res, th))
+        ds_cams = xr.open_dataset(gosat_path.format('cams', m, x_res, y_res, th_cams))
+        ds_cams_iasi = xr.open_dataset(gosat_path.format('cams_iasi', m, x_res, y_res, th_cams))
 
         lon_iasi = ds_iasi['lon_cen'].values
         lat_iasi = ds_iasi['lat_cen'].values
@@ -507,9 +507,12 @@ def seasonal_plot():
     y_res = 5
     path = 'monthly_means/{}_{:02}_{}x{}_th{}.nc'
     path_iasi = 'monthly_means/{}_{:02}_{}x{}_th{}_qf{}.nc'
+    th_iasi = 10
+    th_gosat = 3
+    th_cams = 0
 
     # Load first month just to get lat array length
-    ds_iasi_first = xr.open_dataset(path_iasi.format('iasi', 1, x_res, y_res, 0, 3))
+    ds_iasi_first = xr.open_dataset(path_iasi.format('iasi', 1, x_res, y_res, th_iasi, 3))
     lat_cen = ds_iasi_first['lat_cen'].values
     n_lat = len(lat_cen)
 
@@ -521,10 +524,10 @@ def seasonal_plot():
 
     for m in range(1, 13):
 
-        ds_iasi = xr.open_dataset(path_iasi.format('iasi', m, x_res, y_res, 0, 3))
-        ds_gosat = xr.open_dataset(path.format('gosat', m, x_res, y_res, 0))
-        ds_cams = xr.open_dataset(path.format('cams', m, x_res, y_res, 0))
-        ds_cams_iasi = xr.open_dataset(path.format('cams_iasi', m, x_res, y_res, 0))
+        ds_iasi = xr.open_dataset(path_iasi.format('iasi', m, x_res, y_res, th_iasi, 3))
+        ds_gosat = xr.open_dataset(path.format('gosat', m, x_res, y_res, th_gosat))
+        ds_cams = xr.open_dataset(path.format('cams', m, x_res, y_res, th_cams))
+        ds_cams_iasi = xr.open_dataset(path.format('cams_iasi', m, x_res, y_res, th_cams))
 
         variable_iasi = ds_iasi[var].values
         iasi_zonal = zonal_mean(variable_iasi)

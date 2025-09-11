@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 import os
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import glob2
 import netCDF4 as nc
@@ -12,6 +13,14 @@ from.chng_prior import layer_mid_pressure
 from os.path import join
 
 from .conv_constants import *
+
+def set_size(width_pt=418.25555, fraction=1.0, ratio=0.62):
+    """Width in pt → (width, height) in inches.
+    TEXTWIDTH_PT = 418.25555  # from your log"""
+    inches_per_pt = 1/72.27
+    width_in = width_pt * inches_per_pt * fraction
+    height_in = width_in * ratio
+    return (width_in, height_in)
 
 
 def _coord_tag(coord):
@@ -52,6 +61,20 @@ def mean_apris():
         [(135, 140), (-35, -30)]
     ]  # rows
     quality_flag = 3
+
+    mpl.rcParams.update({
+        "text.usetex": True,
+        "font.family": "serif",
+        "font.size": 10.95,  # <- from FONTSIZE in your log
+        "axes.labelsize": 10.95,
+        "axes.titlesize": 10.95,
+        "legend.fontsize": 9,  # ~\footnotesize
+        "xtick.labelsize": 9,
+        "ytick.labelsize": 9,
+        "text.latex.preamble": r"\usepackage[T1]{fontenc}\usepackage{lmodern}",
+        # add packages you actually use in labels, e.g.:
+        # r"\usepackage[T1]{fontenc}\usepackage{lmodern}\usepackage{siunitx}\usepackage{mhchem}"
+    })
 
     # Prepare figure
     fig, axes = plt.subplots(len(coords), len(months), figsize=(15, 12), sharex=True, sharey=True)

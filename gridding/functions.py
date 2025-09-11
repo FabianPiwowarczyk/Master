@@ -1,48 +1,56 @@
-from .plot_lv3 import plot_lv3_data, combined_plot, zonal_plot, dif_plot, seasonal_plot
+from .plot_lv3 import plot_lv3_data, combined_plot, zonal_plot, dif_plot
 from .grid_func import monthly_mean
+from .final_plots import correction_example, tot_mean_example, seasonal_plots, proxy_plots
 
 
 def replot_all():
 
-    plot_lv3_data(5, 5, 0,
-                  'monthly_means/{}_{}_{}x{}_th{}.nc', 'gosat',
-                  'mean_tot', 280, 340)
-    plot_lv3_data(1, 1, 0,
-                  'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
-                  'mean_tot', 280, 340, 3)
-    plot_lv3_data(1, 1, 0,
-                  'monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
-                  'mean_tot', 280, 340, 3, 0)
+    th_gosat = 3
+    th_iasi = 10
+    th_cams = 0
 
-    plot_lv3_data(5, 5, 0,
-                  'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
-                  'mean_tot', 280, 340, 3)
-    plot_lv3_data(5, 5, 0,
-                  'monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
-                  'mean_tot', 280, 340, 3, 0)
+    # plot_lv3_data(5, 5, th_gosat,
+    #               'monthly_means/{}_{}_{}x{}_th{}.nc', 'gosat',
+    #               'mean_tot', 280, 340)
+    #
+    # plot_lv3_data(5, 5, th_iasi,
+    #               'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
+    #               'mean_tot', 280, 340, 3)
+    # plot_lv3_data(5, 5, th_iasi,
+    #               'monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', 'iasi',
+    #               'mean_tot', 280, 340, 3, 0)
+    #
+    # combined_plot(5, 5, th_iasi, th_gosat, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
+    #               'mean_tot', 3, vmin=-30, vmax=30,
+    #               met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0)
+    #
+    # zonal_plot(5, 5, th_iasi, th_gosat, th_cams, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
+    #               'mean_tot', 3, vmin=None, vmax=None,
+    #               met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0)
+    #
+    # # CAMS Plots
+    # plot_lv3_data(5, 5, th_cams,
+    #               'monthly_means/{}_{}_{}x{}_th{}.nc', 'cams',
+    #               'mean_tot', 280, 340)
+    #
+    # plot_lv3_data(5, 5, th_cams,
+    #               'monthly_means/{}_{}_{}x{}_th{}.nc', 'cams_iasi',
+    #               'mean_tot', 280, 340)
+    #
+    # dif_plot(5, 5, th_iasi, th_gosat, th_cams, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
+    #               'mean_tot', 3, vmin=-30, vmax=30,
+    #               met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0)
+    #
+    #
+    # correction_example()
 
-    combined_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
-                  'mean_tot', 3, vmin=-30, vmax=30,
-                  met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0)
+    #for m in range(1, 13):
+    #    tot_mean_example(m)
+    #seasonal_plots()
 
-    zonal_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
-                  'mean_tot', 3, vmin=None, vmax=None,
-                  met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0)
+    for m in range(1, 13):
+       proxy_plots(m)
 
-    # CAMS Plots
-    plot_lv3_data(5, 5, 0,
-                  'monthly_means/{}_{}_{}x{}_th{}.nc', 'cams',
-                  'mean_tot', 280, 340)
-
-    plot_lv3_data(5, 5, 0,
-                  'monthly_means/{}_{}_{}x{}_th{}.nc', 'cams_iasi',
-                  'mean_tot', 280, 340)
-
-    dif_plot(5, 5, 0, 'monthly_means/{}_{}_{}x{}_th{}_qf{}.nc',
-                  'mean_tot', 3, vmin=-30, vmax=30,
-                  met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0)
-
-    seasonal_plot()
 
 
 def regrid_iasi():
