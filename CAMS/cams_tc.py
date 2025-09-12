@@ -95,10 +95,9 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
 
     idx_count = 0
     for idx_t, time_step in tqdm(enumerate(utc_cams), total=len(utc_cams)):  # create loading bar
-        # print(idx_t)
-        # print(time_step)
-        # if idx_t < 199:
-        #     continue
+
+        if idx_t < 56:
+            continue
         iasi_data = read_iasi_day(time_step.month, time_step.day)
 
         # Extract lat and lon as 1D arrays
@@ -112,7 +111,11 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
         })
 
         for idx_lat, lat_val in enumerate(lat):
+            if idx_lat < 131:
+                continue
             for idx_lon, lon_val in enumerate(lon):
+                if idx_lon < 69:
+                    continue
 
                 # calc distance to coord point to all iasi points
                 df_iasi['distance'] = haversine_distance_vectorized(df_iasi['lat'].values,
@@ -139,8 +142,8 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
                 # edge cases for iasi and cams ground and top of atmos. not aligning
                 n2o_iasi_lev[np.where(cams_pre_lay[0] < iasi_pre)[0]] = cams_n2o_lay[0]
 
-                if cams_n2o_lay[-1] == 0:
-                    n2o_iasi_lev[np.where(cams_pre_lay[-1] > iasi_pre)[0]] = 10e-10
+                if cams_n2o_lay[-1] == 0.0:
+                    n2o_iasi_lev[-1] = 10e-11
                 else:
                     n2o_iasi_lev[np.where(cams_pre_lay[-1] > iasi_pre)[0]] = cams_n2o_lay[-1]
 
@@ -148,14 +151,6 @@ def iasi_avk_tc(time, lat, lon, n2o_lay, cams_pre_lev, m):
                 n2o_iasi_lev[np.where(np.isnan(n2o_iasi_lev))[0][::-1]] = np.interp(
                     iasi_pre[np.where(np.isnan(n2o_iasi_lev))[0]][::-1],  # new levels on which to interpolate
                     cams_pre_lay[::-1], cams_n2o_lay[::-1])  # cams data
-
-                if np.any(n2o_iasi_lev == 0):
-                    print("Array contains zeros")
-                    print(n2o_iasi_lev)
-                    print(idx_t, idx_lat, idx_lon)
-
-                    import sys
-                    sys.exit()
 
                 # how would iasi see the cams atmosphere
                 x_sim = np.exp(np.matmul(avk, np.log(n2o_iasi_lev[::-1])) +
