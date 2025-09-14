@@ -12,7 +12,7 @@ import matplotlib.colors as mcolors
 from matplotlib.ticker import FuncFormatter
 
 
-def correction_example():
+def correction_example(month):
 
     mpl.rcParams.update({
         "text.usetex": True,
@@ -26,13 +26,13 @@ def correction_example():
         # r"\usepackage[T1]{fontenc}\usepackage{lmodern}\usepackage{siunitx}\usepackage{mhchem}"
     })
 
-    FIGSIZE = set_size(width_fraction=1.3, height_fraction=0.63)
+    FIGSIZE = set_size(width_fraction=1.3, height_fraction=0.66)
     cbar_fontsize = 9
 
     dir_path = 'monthly_means/{}_{:02d}_{}x{}_th{}_qf{}.nc'
     met_path = 'monthly_means/{}_met{}_{:02d}_{}x{}_th{}_qf{}.nc'
 
-    month = 2
+    #month = 2
     x_res = 5
     y_res = 5
     th_iasi = 10
@@ -97,12 +97,14 @@ def correction_example():
     style_ax(axs[0, 0], pos='left')
     pcm00 = axs[0, 0].pcolormesh(lon_bnds, lat_bnds, var1_abs, transform=ccrs.PlateCarree(),
                                  cmap='seismic', norm=norm_row1)
-    axs[0, 0].set_title(f'IASI - GOSAT {x_res}x{y_res} grid 2020-{month}')
+    axs[0, 0].set_title(f'IASI - GOSAT-2 {x_res}x{y_res} grid 2020-{month} \n'
+                        f' global mean {mean_var1:.2f} \u00B1 {std_var1:.2f}')
 
     style_ax(axs[0, 1], pos='right')
     pcm01 = axs[0, 1].pcolormesh(lon_bnds, lat_bnds, var2_abs, transform=ccrs.PlateCarree(),
                                  cmap='seismic', norm=norm_row1)
-    axs[0, 1].set_title(f'Cor met{met} IASI - GOSAT {x_res}x{y_res} grid 2020-{month}')
+    axs[0, 1].set_title(f'IASI (a-priori) - GOSAT-2 {x_res}x{y_res} grid 2020-{month} \n'
+                        f' global mean {mean_var2:.2f} \u00B1 {std_var2:.2f}')
 
     # shared colorbar for top row
     cbar1 = fig.colorbar(pcm00, ax=axs[0, :], orientation='horizontal', fraction=0.02, pad=0.04, aspect=80)
@@ -112,12 +114,12 @@ def correction_example():
     style_ax(axs[1, 0], pos='left')
     pcm10 = axs[1, 0].pcolormesh(lon_bnds, lat_bnds, var1_zm, transform=ccrs.PlateCarree(),
                                  cmap='seismic', norm=norm_row2)
-    axs[1, 0].set_title(f'IASI - GOSAT - ZONAL {x_res}x{y_res} grid 2020-{month}')
+    axs[1, 0].set_title(f'IASI - GOSAT-2 - ZONAL {x_res}x{y_res} grid 2020-{month}')
 
     style_ax(axs[1, 1], pos='right')
     pcm11 = axs[1, 1].pcolormesh(lon_bnds, lat_bnds, var2_zm, transform=ccrs.PlateCarree(),
                                  cmap='seismic', norm=norm_row2)
-    axs[1, 1].set_title(f'Cor met{met} IASI - GOSAT - ZONAL {x_res}x{y_res} grid 2020-{month}')
+    axs[1, 1].set_title(f'IASI (a-priori) - GOSAT-2 - ZONAL {x_res}x{y_res} grid 2020-{month}')
 
     # shared colorbar for bottom row
     cbar2 = fig.colorbar(pcm10, ax=axs[1, :], orientation='horizontal', fraction=0.02, pad=0.04, aspect=80)
@@ -130,8 +132,8 @@ def correction_example():
         hspace=0.00  # space between rows
     )
 
-    # outpath_combined = f'pictures/differences_combined_{x_res}x{y_res}_{month}.png'
-    # plt.savefig(outpath_combined)
+    #outpath_combined = f'pictures/differences_combined_{x_res}x{y_res}_{month}.png'
+    #plt.savefig(outpath_combined, dpi=300)
 
     base = f"pictures/differences_combined_{x_res}x{y_res}_{month}"
     fig.savefig(base + ".pdf")  # vector PDF (great for LaTeX)
@@ -165,7 +167,7 @@ def tot_mean_example(month):
     qf = 3
     var = 'mean_tot'
     met = 0
-    vmin = 280
+    vmin = 290
     vmax = 340
 
     ds_iasi = xr.open_dataset(dir_path.format('iasi', month, x_res, y_res, th_iasi, qf))
@@ -182,6 +184,12 @@ def tot_mean_example(month):
     variable_gosat = ds_gosat[var].values
     variable_cams = ds_cams[var].values
     variable_cams_i = ds_cams_iasi[var].values
+
+    if month == 3:
+        print(np.nanmin(variable_iasi), np.nanmax(variable_iasi))
+        print(np.nanmin(variable_gosat), np.nanmax(variable_gosat))
+        print(np.nanmin(variable_cams), np.nanmax(variable_cams))
+        print(np.nanmin(variable_cams_i), np.nanmax(variable_cams_i))
 
     iasi_zonal = zonal_mean(variable_iasi)
     gosat_zonal = zonal_mean(variable_gosat)
@@ -255,8 +263,8 @@ def tot_mean_example(month):
     #plt.show()
 
     base = f"pictures/final_plots/total_columns_{x_res}x{y_res}_{month}"
-    #fig.savefig(base + ".pdf")  # vector PDF (great for LaTeX)
-    fig.savefig(f"pictures/total_columns_{x_res}x{y_res}_{month}.png", dpi=300)
+    fig.savefig(base + ".pdf")  # vector PDF (great for LaTeX)
+    #fig.savefig(f"pictures/total_columns_{x_res}x{y_res}_{month}.png", dpi=300)
 
     ######################## Plot IASI and CAMS - ZONAL #######################################
 
@@ -489,54 +497,47 @@ def seasonal_plots():
     # fig.savefig(base + ".pdf")  # vector PDF (great for LaTeX)
     fig.savefig(base + ".png", dpi=300)
 
+    ################# Plot Seasonal: Plot diffs (IASI - GOSAT) #################
 
-    ################# Plot Seasonal: Plot diffs IASI CAMS #################
+    FIGSIZE_one = set_size(width_fraction=0.75, height_fraction=0.4)
 
-    # diff_data = [
-    #     (all_cams_zonal - all_iasi_zonal, "CAMS - IASI Zonal Mean"),
-    #     (all_cams_iasi_zonal - all_iasi_zonal, "CAMS (IASI AVK) - IASI Zonal Mean")
-    # ]
-    #
-    # vmin = min(np.nanmin(d[0]) for d in diff_data)
-    # vmax = max(np.nanmax(d[0]) for d in diff_data)
-    #
-    # # Create diverging colormap: blue-white-red
-    # cmap = plt.cm.bwr.copy()
-    # cmap.set_bad("gray")  # gray background for NaNs
-    #
-    # # Normalize so that 0 is white
-    # norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
-    #
-    # fig, axs = plt.subplots(1, 2, figsize=(12, 4), sharex=True, sharey=True)
-    # cs = []
-    #
-    # for ax, (data, title) in zip(axs.ravel(), diff_data):
-    #     c = ax.pcolormesh(M, L, data, cmap=cmap, norm=norm, shading='auto')
-    #     ax.set_title(title)
-    #     ax.set_xlabel("Month")
-    #     ax.set_ylabel("Latitude")
-    #     cs.append(c)
-    #
-    # xticks = [1, 3, 6, 9, 12]
-    #
-    # for ax in axs.ravel():
-    #     ax.set_xticks(xticks)
-    #     ax.set_xticklabels(xticks)
-    #     ax.tick_params(axis='x', labelbottom=True)  # force labels to show
-    #
-    # # Adjust layout to make space for colorbar
-    # fig.subplots_adjust(right=0.88)
-    #
-    # # Add overall title
-    # fig.suptitle("Seasonal Diff Zonal Means for 2020", fontsize=16)
-    #
-    # # Add colorbar to the right of all subplots
-    # cbar_ax = fig.add_axes([0.90, 0.15, 0.02, 0.7])
-    # cbar = fig.colorbar(cs[0], cax=cbar_ax)
-    # cbar.set_label(r"mean $\mathrm{XN}_2\mathrm{O}$ in ppb")
-    #
-    # outpath_diff = f'pictures/seasonal_diff_cams-iasi_{x_res}x{y_res}.png'
-    # plt.savefig(outpath_diff)
+    # use only the first diff
+    diff0_data, diff0_title = (all_iasi_zonal - all_gosat_zonal, "IASI - GOSAT-2 Zonal Mean")
+
+    vmin, vmax = -10, 10
+
+    # diverging colormap centered at 0
+    cmap = plt.cm.bwr.copy()
+    cmap.set_bad("gray")  # NaNs as gray
+    norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
+
+    # single subplot
+    fig, ax = plt.subplots(1, 1, figsize=FIGSIZE_one, constrained_layout=True)
+
+    # ticks/labels
+    yticks = np.arange(-60, 61, 30)
+
+    # plot
+    c = ax.pcolormesh(M, L, diff0_data, cmap=cmap, norm=norm, shading='auto')
+    ax.set_title(diff0_title)
+    ax.set_xlabel("Month")
+    ax.set_ylim(-90, 90)
+    ax.set_yticks(yticks)
+    ax.yaxis.set_major_formatter(FuncFormatter(lat_fmt))
+
+    # x ticks
+    xticks = [1, 3, 6, 9, 12]
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(xticks)
+    ax.tick_params(axis='x', labelbottom=True)
+
+    # bottom colorbar
+    cbar = fig.colorbar(c, ax=ax, orientation="horizontal", fraction=0.05, pad=0.04)
+    cbar.set_label(r"mean $\mathrm{xN}_2\mathrm{O}$ in ppb")
+
+    # save
+    base = f'pictures/seasonal_diff_{x_res}x{y_res}'
+    fig.savefig(base + "_iasi_gosat.png", dpi=300)
 
 
 def proxy_plots(month):
@@ -698,6 +699,107 @@ def proxy_plots(month):
     base = f"pictures/abs_difs_{x_res}x{y_res}_{month}"
     # fig.savefig(base + ".pdf")  # vector PDF (great for LaTeX)
     fig.savefig(f"pictures/abs_difs_{x_res}x{y_res}_{month}.png", dpi=300)
+
+
+def IASI_GOSAT_plots(month):
+
+    mpl.rcParams.update({
+        "text.usetex": True,
+        "font.family": "serif",
+        "font.size": 10.0,  # <- from FONTSIZE in your log
+        "axes.labelsize": 9.0,
+        "axes.titlesize": 10.95,  # actually does matter
+        "legend.fontsize": 8,  # ~\footnotesize
+        "text.latex.preamble": r"\usepackage[T1]{fontenc}\usepackage{lmodern}",
+        # add packages you actually use in labels, e.g.:
+        # r"\usepackage[T1]{fontenc}\usepackage{lmodern}\usepackage{siunitx}\usepackage{mhchem}"
+    })
+
+    FIGSIZE = set_size(width_fraction=1.3, height_fraction=0.63)
+    cbar_fontsize = 9
+
+    dir_path = 'monthly_means/{}_{:02d}_{}x{}_th{}_qf{}.nc'
+
+    #month = 3
+    x_res = 5
+    y_res = 5
+    th_iasi = 10
+    th_gosat = 3
+    th_cams = 0
+    qf = 3
+    var = 'mean_tot'
+    met = 0
+    vmin = 280
+    vmax = 340
+
+    ds_iasi = xr.open_dataset(dir_path.format('iasi', month, x_res, y_res, th_iasi, qf))
+
+    gosat_path = 'monthly_means/{}_{:02d}_{}x{}_th{}.nc'
+    ds_gosat = xr.open_dataset(gosat_path.format('gosat', month, x_res, y_res, th_gosat))
+
+    lon_iasi = ds_iasi['lon_cen'].values
+    lat_iasi = ds_iasi['lat_cen'].values
+    variable_iasi = ds_iasi[var].values
+    variable_gosat = ds_gosat[var].values
+
+    iasi_zonal = zonal_mean(variable_iasi)
+    gosat_zonal = zonal_mean(variable_gosat)
+
+    lon_bnds = bnds(lon_iasi)
+    lat_bnds = bnds(lat_iasi)
+
+    iasi_proxy = variable_iasi - iasi_zonal
+    gosat_proxy = variable_gosat - gosat_zonal
+
+    ######################## GOSAT IASI diffs #######################################
+    abs_dif = variable_iasi - variable_gosat
+    proxy_dif = iasi_proxy - gosat_proxy
+
+    norm = mcolors.TwoSlopeNorm(vmin=-10, vcenter=0, vmax=10)  # norm for colorbar
+
+    FIGSIZE_zonal = set_size(width_fraction=1.3, height_fraction=0.32)
+
+    fig, axs = plt.subplots(1, 2, figsize=FIGSIZE_zonal, subplot_kw={'projection': ccrs.PlateCarree()},
+                            constrained_layout=True)
+
+    def style_ax(ax, pos):
+        ax.coastlines()
+        # ax.add_feature(cfeature.BORDERS)
+        ax.add_feature(cfeature.LAND, facecolor='gray')
+        ax.add_feature(cfeature.OCEAN, facecolor='lightgray')
+        gl = ax.gridlines(draw_labels=True, linestyle='--', color='black')
+        if pos == 'left':
+            gl.top_labels = gl.right_labels = False
+        else:
+            gl.top_labels = gl.right_labels = gl.left_labels = False
+        gl.xlabel_style = {'size': 8, 'color': 'black'}
+        gl.ylabel_style = {'size': 8, 'color': 'black'}
+
+    # ---- Row 1: IASI GOSAT ----
+    style_ax(axs[0], pos='left')
+    pcm00 = axs[0].pcolormesh(lon_bnds, lat_bnds, abs_dif, transform=ccrs.PlateCarree(), cmap='seismic'
+                              , norm=norm)
+    axs[0].set_title(rf'IASI - GOSAT-2 {x_res}$^\circ$$\times${y_res}$^\circ$ grid 2020-{month:02d}')
+
+    style_ax(axs[1], pos='right')
+    pcm01 = axs[1].pcolormesh(lon_bnds, lat_bnds, proxy_dif, transform=ccrs.PlateCarree(), cmap='seismic'
+                              , norm=norm)
+    axs[1].set_title(rf'IASI - GOSAT-2 proxys {x_res}$^\circ$$\times${y_res}$^\circ$ grid 2020-{month:02d}')
+
+    # shared colorbar
+    cbar = fig.colorbar(pcm00, ax=axs[:], orientation='horizontal', fraction=0.02, pad=0.04, aspect=50)
+    cbar.set_label(r'$\mathrm{xN}_2\mathrm{O}$ in ppb', fontsize=cbar_fontsize)
+
+    fig.set_constrained_layout_pads(
+        w_pad=1 / 72,  # padding around axes (inches, ~1pt)
+        h_pad=1 / 72,
+        wspace=0.02,  # space between columns (fraction of axes)
+        hspace=0.00  # space between rows
+    )
+
+    base = f"pictures/iasi_gosat_diffs_{x_res}x{y_res}_{month}"
+    # fig.savefig(base + ".pdf")  # vector PDF (great for LaTeX)
+    fig.savefig(f"pictures/iasi_gosat_diffs_{x_res}x{y_res}_{month}.png", dpi=300)
 
 
 def set_size(textwidth_pt=466.62503, textheight_pt=674.33032, width_fraction=1.0, height_fraction=0.4):

@@ -1,6 +1,6 @@
 from .plot_lv3 import plot_lv3_data, combined_plot, zonal_plot, dif_plot
 from .grid_func import monthly_mean
-from .final_plots import correction_example, tot_mean_example, seasonal_plots, proxy_plots
+from .final_plots import correction_example, tot_mean_example, seasonal_plots, proxy_plots, IASI_GOSAT_plots
 
 
 def replot_all():
@@ -42,14 +42,18 @@ def replot_all():
     #               met_path='monthly_means/{}_met{}_{}_{}x{}_th{}_qf{}.nc', met=0)
     #
     #
-    # correction_example()
+    for m in range(1, 13):
+        correction_example(m)
 
-    #for m in range(1, 13):
-    #    tot_mean_example(m)
-    #seasonal_plots()
+    for m in range(1, 13):
+       tot_mean_example(m)
+    seasonal_plots()
 
     for m in range(1, 13):
        proxy_plots(m)
+
+    for m in range(1, 13):
+        IASI_GOSAT_plots(m)
 
 
 
