@@ -1,6 +1,7 @@
 import glob2
 from os.path import join
 import os
+import matplotlib as mpl
 
 import matplotlib.pyplot as plt
 import netCDF4 as nc
@@ -48,16 +49,32 @@ def plot_mean_columns_multi(months, coord, idx):
     Plot CAMS / IASI / IASI a-priori / CAMS (IASI AVK) profiles
     for a list of months side by side. Caches each 1D array to TXT.
     """
+
+    mpl.rcParams.update({
+        "text.usetex": True,
+        "font.family": "serif",
+        "font.size": 10.0,  # <- from FONTSIZE in your log
+        "axes.labelsize": 9.0,
+        "axes.titlesize": 10.95,  # actually does matter
+        "legend.fontsize": 8,  # ~\footnotesize
+        "text.latex.preamble": r"\usepackage[T1]{fontenc}\usepackage{lmodern}",
+        # add packages you actually use in labels, e.g.:
+        # r"\usepackage[T1]{fontenc}\usepackage{lmodern}\usepackage{siunitx}\usepackage{mhchem}"
+    })
+
     # Ensure months is an iterable of ints
     if isinstance(months, int):
         months = [months]
 
+    print(f'Plot {idx}')
+
+    ncols = len(months)
+    FIGSIZE = set_size(width_fraction=0.33 * ncols, height_fraction=0.35)
     data_dir = '/misc/ghgcci3/data/CAMS_N2O_v21r1/'
     paths = glob2.glob(join(data_dir, 'cams73_v21r1_n2o_conc_surface_inst_2020*.nc'))
     paths.sort()
 
-    ncols = len(months)
-    fig, axes = plt.subplots(1, ncols, figsize=(4.0*ncols, 5.0), sharey=True)
+    fig, axes = plt.subplots(1, ncols, figsize=FIGSIZE, sharey=True)
     if ncols == 1:
         axes = np.array([axes])
 
@@ -94,6 +111,8 @@ def plot_mean_columns_multi(months, coord, idx):
             Psurf_exp = Psurf[:, None, :, :]
             P = A_exp + B_exp * Psurf_exp              # (time, lev, lat, lon)
             P_lay = layer_mid_pressure(P)              # (time, lay, lat, lon)
+
+            del A, B, Psurf, A_exp, B_exp, Psurf_exp
 
             # Reshape into rows with lon/lat appended
             nrows = N2O.shape[0] * N2O.shape[2] * N2O.shape[3]
@@ -141,6 +160,8 @@ def plot_mean_columns_multi(months, coord, idx):
                 save_vec('cams_data', month, coord, cams_data)
                 save_vec('cams_pressure', month, coord, cams_pressure)
 
+                del interp_profiles, f_df, f_dfP, P_lay, in_box, df, dfP
+
             if need_cams_avk:
                 cams_data_avk, cams_avk_pressure_grid = cams_iasi_avk(
                     time, latitude, longitude, N2O, P, month, coord
@@ -148,6 +169,7 @@ def plot_mean_columns_multi(months, coord, idx):
                 save_vec('cams_data_avk', month, coord, cams_data_avk)
                 save_vec('cams_avk_pressure_grid', month, coord, cams_avk_pressure_grid)
 
+                del time, latitude, longitude, N2O, P
             ds.close()
 
         if need_iasi:
@@ -346,6 +368,8 @@ def read_iasi(month, coord):
         (pre_data["lat"] >= coord[1][0]) & (pre_data["lat"] <= coord[1][1])
         ]
 
+    del ds_iasi, x_iasi, x_apri, p_iasi, lon_iasi, lat_iasi, iasi_data, apri_data, pre_data
+
     for pa in paths[1:]:
         ds_new = xr.open_dataset(pa)[['n2o_lev_dry', 'pre_lev', 'lon', 'lat', 'apri']]
         new_iasi = ds_new['n2o_lev_dry'].values
@@ -400,6 +424,8 @@ def read_iasi(month, coord):
         apri_fil = pd.concat([apri_fil, apri_fil_new])
         pre_fil = pd.concat([pre_fil, pre_fil_new])
 
+        del ds_new, new_iasi, new_apri, p_new, new_filtered, apri_fil_new, pre_fil_new
+
     # filtered_plots = filtered.iloc[:, :-2].to_numpy()
     # pre_fil_plots = pre_fil.iloc[:, :-2].to_numpy()
     #
@@ -441,6 +467,8 @@ def read_iasi(month, coord):
     mean_profile = np.nanmean(interp_profiles, axis=0) * 1000
     mean_apri = np.nanmean(interp_apris, axis=0) * 1000
 
+    del interp_profiles, interp_apris, filtered, apri_fil, pre_fil
+
     return mean_profile, mean_apri, pressure_grid
 
 
@@ -464,3 +492,28 @@ def layer_mid_pressure(P):
     P_mid = np.exp(0.5 * (np.log(P_top) + np.log(P_bottom)))
 
     return P_mid
+
+
+def set_size(textwidth_pt=466.62503, textheight_pt=674.33032, width_fraction=1.0, height_fraction=0.4):
+    """
+    Convert LaTeX text sizes (pt) to a Matplotlib figure size (inches).
+
+    * \textwidth=466.62503pt * \textheight=674.33032pt
+
+    Parameters
+    ----------
+    textwidth_pt : float   # \textwidth  in pt (from LaTeX log)
+    textheight_pt: float   # \textheight in pt (from LaTeX log)
+    width_fraction : float # e.g. 1.0 for full width, 0.5 for half width
+    height_fraction: float # e.g. 0.4 for 40% of \textheight
+
+    Returns
+    -------
+    (width_in, height_in) in inches
+    TEXTWIDTH_PT  = 418.25555
+    TEXTHEIGHT_PT = 595.80026
+    """
+    inches_per_pt = 1/72.27
+    width_in  = textwidth_pt  * inches_per_pt * width_fraction
+    height_in = textheight_pt * inches_per_pt * height_fraction
+    return (width_in, height_in)

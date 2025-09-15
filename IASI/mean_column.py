@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import glob2
 import netCDF4 as nc
 from datetime import datetime, timedelta
+import calendar
 
 from .total_column_conversion import dry_column, lev2lay, grav_geoid, grav_acc
 from.chng_prior import layer_mid_pressure
@@ -14,12 +15,28 @@ from os.path import join
 
 from .conv_constants import *
 
-def set_size(width_pt=418.25555, fraction=1.0, ratio=0.62):
-    """Width in pt → (width, height) in inches.
-    TEXTWIDTH_PT = 418.25555  # from your log"""
+def set_size(textwidth_pt=466.62503, textheight_pt=674.33032, width_fraction=1.0, height_fraction=0.4):
+    """
+    Convert LaTeX text sizes (pt) to a Matplotlib figure size (inches).
+
+    * \textwidth=466.62503pt * \textheight=674.33032pt
+
+    Parameters
+    ----------
+    textwidth_pt : float   # \textwidth  in pt (from LaTeX log)
+    textheight_pt: float   # \textheight in pt (from LaTeX log)
+    width_fraction : float # e.g. 1.0 for full width, 0.5 for half width
+    height_fraction: float # e.g. 0.4 for 40% of \textheight
+
+    Returns
+    -------
+    (width_in, height_in) in inches
+    TEXTWIDTH_PT  = 418.25555
+    TEXTHEIGHT_PT = 595.80026
+    """
     inches_per_pt = 1/72.27
-    width_in = width_pt * inches_per_pt * fraction
-    height_in = width_in * ratio
+    width_in  = textwidth_pt  * inches_per_pt * width_fraction
+    height_in = textheight_pt * inches_per_pt * height_fraction
     return (width_in, height_in)
 
 
@@ -65,16 +82,16 @@ def mean_apris():
     mpl.rcParams.update({
         "text.usetex": True,
         "font.family": "serif",
-        "font.size": 10.95,  # <- from FONTSIZE in your log
-        "axes.labelsize": 10.95,
-        "axes.titlesize": 10.95,
-        "legend.fontsize": 9,  # ~\footnotesize
-        "xtick.labelsize": 9,
-        "ytick.labelsize": 9,
+        "font.size": 10.0,  # <- from FONTSIZE in your log
+        "axes.labelsize": 9.0,
+        "axes.titlesize": 10.95,  # actually does matter
+        "legend.fontsize": 8,  # ~\footnotesize
         "text.latex.preamble": r"\usepackage[T1]{fontenc}\usepackage{lmodern}",
         # add packages you actually use in labels, e.g.:
         # r"\usepackage[T1]{fontenc}\usepackage{lmodern}\usepackage{siunitx}\usepackage{mhchem}"
     })
+
+    FIGSIZE = set_size(width_fraction=1, height_fraction=0.7)
 
     # Prepare figure
     fig, axes = plt.subplots(len(coords), len(months), figsize=(15, 12), sharex=True, sharey=True)
@@ -129,32 +146,36 @@ def mean_apris():
             # bottom-left
             ax.text(
                 0.03, 0.05,  # << moved near bottom-left
-                f"Δ(GOSAT-2 minus IASI) ground = {diff_0:.1f} ppb{note}",
+                rf"$\Delta$ ground level = {diff_0:.1f}$\,$ppb{note}",
                 transform=ax.transAxes, ha='left', va='bottom',
-                fontsize=9, bbox=dict(boxstyle='round', fc='white', alpha=0.7, ec='none')
+                fontsize=14, bbox=dict(boxstyle='round', fc='white', alpha=0.7, ec='none')
             )
             # (optional) for absolute difference instead, use:
             # diff_0 = np.abs(mean_gosat[idx0] - mean_iasi[idx0])
             # ============================== ADDED ↑↑↑
 
             # Label axes
-            ax.set_xlabel("N₂O (ppb)")
+            ax.set_xlabel(r"N$_2$O (ppb)", fontsize=13)
             if j == 0:
                 lon_rng, lat_rng = coord
-                ax.set_ylabel(f"Lon: {lon_rng[0]}–{lon_rng[1]}\nLat: {lat_rng[0]}–{lat_rng[1]}\nPressure (hPa)")
+                ax.set_ylabel(f"Lon: {lon_rng[0]}–{lon_rng[1]}\nLat: {lat_rng[0]}–{lat_rng[1]}\nPressure (hPa)",
+                              fontsize=13)
 
             # Titles for months
             if i == 0:
-                ax.set_title(f"Month {month}")
+                ax.set_title(calendar.month_name[month] + ' 2020', fontsize=15)
 
     # Legend only once (outside grid)
     handles, labels = axes[0, 0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="upper right")
+    fig.legend(handles, labels, loc="upper right", fontsize=13)
     fig.tight_layout()
 
     outpath = 'pictures/apri_vergleich_iasi_gosat.png'
     os.makedirs(os.path.dirname(outpath), exist_ok=True)
-    plt.savefig(outpath)
+    plt.savefig(outpath, dpi=300)
+
+    base = 'pictures/apri_vergleich_iasi_gosat.pdf'
+    fig.savefig(base)  # vector PDF (great for LaTeX)
 
 
 def conv_iasi_time_readable(time):

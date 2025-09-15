@@ -84,6 +84,10 @@ def cams_iasi_avk(time, lat, lon, n2o_lay, cams_pre_lev, m, coord):
                 cams_avk.append(x_sim * 1000)   # back to ppb
                 pressure.append(iasi_pre)
 
+                del avk, apri, iasi_pre
+
+    del iasi_data, iasi_lat, iasi_lon, df_iasi
+
     cams_avk = pad_front_nan_29(cams_avk)
     pressure = pad_front_nan_29(pressure)
 
