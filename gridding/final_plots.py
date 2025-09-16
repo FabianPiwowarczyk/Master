@@ -97,13 +97,15 @@ def correction_example(month):
     style_ax(axs[0, 0], pos='left')
     pcm00 = axs[0, 0].pcolormesh(lon_bnds, lat_bnds, var1_abs, transform=ccrs.PlateCarree(),
                                  cmap='seismic', norm=norm_row1)
-    axs[0, 0].set_title(f'IASI - GOSAT-2 {x_res}x{y_res} grid 2020-{month} \n'
-                        f' global mean {mean_var1:.2f} \u00B1 {std_var1:.2f}')
+    axs[0, 0].set_title(rf'IASI - GOSAT-2 {x_res}$^\circ$$\times${y_res}$^\circ$ grid 2020-{month}'
+                        + '\n'
+                        + f'global mean {mean_var1:.2f} \u00B1 {std_var1:.2f}')
 
     style_ax(axs[0, 1], pos='right')
     pcm01 = axs[0, 1].pcolormesh(lon_bnds, lat_bnds, var2_abs, transform=ccrs.PlateCarree(),
                                  cmap='seismic', norm=norm_row1)
-    axs[0, 1].set_title(f'IASI (a-priori) - GOSAT-2 {x_res}x{y_res} grid 2020-{month} \n'
+    axs[0, 1].set_title(rf'IASI (a-priori) - GOSAT-2 {x_res}$^\circ$$\times${y_res}$^\circ$ grid 2020-{month}'
+                        + '\n'
                         f' global mean {mean_var2:.2f} \u00B1 {std_var2:.2f}')
 
     # shared colorbar for top row
@@ -114,12 +116,12 @@ def correction_example(month):
     style_ax(axs[1, 0], pos='left')
     pcm10 = axs[1, 0].pcolormesh(lon_bnds, lat_bnds, var1_zm, transform=ccrs.PlateCarree(),
                                  cmap='seismic', norm=norm_row2)
-    axs[1, 0].set_title(f'IASI - GOSAT-2 - ZONAL {x_res}x{y_res} grid 2020-{month}')
+    axs[1, 0].set_title(rf'IASI - GOSAT-2 - ZONAL {x_res}$^\circ$$\times${y_res}$^\circ$ grid 2020-{month}')
 
     style_ax(axs[1, 1], pos='right')
     pcm11 = axs[1, 1].pcolormesh(lon_bnds, lat_bnds, var2_zm, transform=ccrs.PlateCarree(),
                                  cmap='seismic', norm=norm_row2)
-    axs[1, 1].set_title(f'IASI (a-priori) - GOSAT-2 - ZONAL {x_res}x{y_res} grid 2020-{month}')
+    axs[1, 1].set_title(rf'IASI (a-priori) - GOSAT-2 - ZONAL {x_res}$^\circ$$\times${y_res}$^\circ$ grid 2020-{month}')
 
     # shared colorbar for bottom row
     cbar2 = fig.colorbar(pcm10, ax=axs[1, :], orientation='horizontal', fraction=0.02, pad=0.04, aspect=80)
@@ -135,7 +137,7 @@ def correction_example(month):
     #outpath_combined = f'pictures/differences_combined_{x_res}x{y_res}_{month}.png'
     #plt.savefig(outpath_combined, dpi=300)
 
-    base = f"pictures/differences_combined_{x_res}x{y_res}_{month}"
+    base = f"pictures/final_plots/iasi_correction_{x_res}x{y_res}_{month}"
     fig.savefig(base + ".pdf")  # vector PDF (great for LaTeX)
 
 

@@ -38,16 +38,16 @@ def printvar(var_name):
     if hasattr(variable, 'dimensions'):
         print("Dimensions:", variable.dimensions)
 
-from IASI.mean_column import mean_apris
+#from IASI.mean_column import mean_apris
 
-mean_apris()
+#mean_apris()
 
 #printvar('musica_fit_quality_flag')
 #printvar('musica_ghg')
 
-from CAMS.mean_cols import plot_mean_columns_multi
+#from CAMS.mean_cols import plot_mean_columns_multi
 
-plot_mean_columns_multi(months=[6, 7, 8], coord=[(0, 60), (-65, -50)], idx=1)
+#plot_mean_columns_multi(months=[6, 7, 8], coord=[(0, 60), (-65, -50)], idx=1)
 
 # # 1) Minimum over Canada: 60–65°N, 90–110°W, AMJ
 # plot_mean_columns_multi(months=[4, 5, 6], coord=[(-110, -90), (60, 65)], idx=2)
@@ -69,7 +69,7 @@ plot_mean_columns_multi(months=[6, 7, 8], coord=[(0, 60), (-65, -50)], idx=1)
 
 import gridding
 #gridding.regrid_iasi()
-#gridding.replot_all()
+gridding.replot_all()
 
 
 #from concurrent.futures import ProcessPoolExecutor
