@@ -47,19 +47,18 @@ def load_vec(varname, month, coord):
 def plot_mean_columns_multi(months, coord, idx):
     """
     Plot CAMS / IASI / IASI a-priori / CAMS (IASI AVK) profiles
-    for a list of months side by side. Caches each 1D array to TXT.
+    side by side for given months. Caches 1D arrays to TXT.
+    After loading all four profiles for a panel, interpolate them
+    onto a single common pressure grid (same y for all lines).
     """
-
     mpl.rcParams.update({
         "text.usetex": True,
         "font.family": "serif",
-        "font.size": 10.0,  # <- from FONTSIZE in your log
+        "font.size": 10.0,
         "axes.labelsize": 9.0,
-        "axes.titlesize": 10.95,  # actually does matter
-        "legend.fontsize": 8,  # ~\footnotesize
+        "axes.titlesize": 10.95,
+        "legend.fontsize": 8,
         "text.latex.preamble": r"\usepackage[T1]{fontenc}\usepackage{lmodern}",
-        # add packages you actually use in labels, e.g.:
-        # r"\usepackage[T1]{fontenc}\usepackage{lmodern}\usepackage{siunitx}\usepackage{mhchem}"
     })
 
     # Ensure months is an iterable of ints
@@ -78,16 +77,33 @@ def plot_mean_columns_multi(months, coord, idx):
     if ncols == 1:
         axes = np.array([axes])
 
+    # --- small helper for safe interpolation on ascending x ---
+    def _interp_to_grid(p_src_hpa, v_src, p_out_hpa):
+        if p_src_hpa is None or v_src is None:
+            return None
+        p = np.asarray(p_src_hpa)
+        v = np.asarray(v_src)
+        # drop NaNs consistently
+        m = np.isfinite(p) & np.isfinite(v)
+        p, v = p[m], v[m]
+        if p.size < 2:
+            return None
+        # ensure strictly ascending for np.interp
+        if np.any(np.diff(p) <= 0):
+            p = p[::-1]
+            v = v[::-1]
+        return np.interp(p_out_hpa, p, v)
+
     for ax, month in zip(axes, months):
 
         # -------- try cache first --------
         cams_data = load_vec('cams_data', month, coord)
-        cams_pressure = load_vec('cams_pressure', month, coord)
+        cams_pressure = load_vec('cams_pressure', month, coord)                   # hPa
         iasi_data = load_vec('iasi_data', month, coord)
-        iasi_pressure = load_vec('iasi_pressure', month, coord)
+        iasi_pressure = load_vec('iasi_pressure', month, coord)                   # hPa
         mean_apri = load_vec('mean_apri', month, coord)
         cams_data_avk = load_vec('cams_data_avk', month, coord)
-        cams_avk_pressure_grid = load_vec('cams_avk_pressure_grid', month, coord)
+        cams_avk_pressure_grid = load_vec('cams_avk_pressure_grid', month, coord) # hPa
 
         need_cams = cams_data is None or cams_pressure is None
         need_iasi = (iasi_data is None) or (iasi_pressure is None) or (mean_apri is None)
@@ -105,7 +121,7 @@ def plot_mean_columns_multi(months, coord, idx):
             B = ds.variables['bp'][:]
             Psurf = ds.variables['Psurf'][:]
 
-            # Hybrid levels -> pressure
+            # Hybrid levels -> pressure (Pa)
             A_exp = A[None, :, None, None]
             B_exp = B[None, :, None, None]
             Psurf_exp = Psurf[:, None, :, :]
@@ -119,21 +135,21 @@ def plot_mean_columns_multi(months, coord, idx):
             cams_prof = np.full((nrows, N2O.shape[1] + 2), np.nan)
             cams_pres = np.full((nrows, N2O.shape[1] + 2), np.nan)
 
-            idx = 0
+            k = 0
             for t in range(P_lay.shape[0]):
                 for ilat in range(P_lay.shape[2]):
                     for ilon in range(P_lay.shape[3]):
-                        cams_prof[idx, :-2] = N2O[t, :, ilat, ilon]
-                        cams_prof[idx, -2] = longitude[ilon]
-                        cams_prof[idx, -1] = latitude[ilat]
-                        cams_pres[idx, :-2] = P_lay[t, :, ilat, ilon]
-                        cams_pres[idx, -2] = longitude[ilon]
-                        cams_pres[idx, -1] = latitude[ilat]
-                        idx += 1
+                        cams_prof[k, :-2] = N2O[t, :, ilat, ilon]
+                        cams_prof[k, -2]  = longitude[ilon]
+                        cams_prof[k, -1]  = latitude[ilat]
+                        cams_pres[k, :-2] = P_lay[t, :, ilat, ilon]
+                        cams_pres[k, -2]  = longitude[ilon]
+                        cams_pres[k, -1]  = latitude[ilat]
+                        k += 1
 
-            df = pd.DataFrame(cams_prof)
+            df  = pd.DataFrame(cams_prof)
             dfP = pd.DataFrame(cams_pres)
-            df = df.rename(columns={df.columns[-2]: "lon", df.columns[-1]: "lat"})
+            df  = df.rename(columns={df.columns[-2]: "lon", df.columns[-1]: "lat"})
             dfP = dfP.rename(columns={dfP.columns[-2]: "lon", dfP.columns[-1]: "lat"})
 
             in_box = (
@@ -150,9 +166,10 @@ def plot_mean_columns_multi(months, coord, idx):
             if need_cams:
                 interp_profiles = []
                 for i in range(f_df.shape[0]):
-                    p_prof = f_dfP.iloc[i, :-2].to_numpy()
-                    n2o_prof = f_df.iloc[i, :-2].to_numpy()
-                    interp_n2o = np.interp(pressure_grid_cams, p_prof[::-1], n2o_prof[::-1])
+                    p_prof   = f_dfP.iloc[i, :-2].to_numpy()      # Pa
+                    n2o_prof = f_df.iloc[i,  :-2].to_numpy()
+                    # make ascending for interp
+                    interp_n2o = np.interp(pressure_grid_cams[::-1], p_prof[::-1], n2o_prof[::-1])[::-1]
                     interp_profiles.append(interp_n2o)
                 interp_profiles = np.asarray(interp_profiles)
                 cams_data = np.nanmean(interp_profiles, axis=0)
@@ -168,8 +185,8 @@ def plot_mean_columns_multi(months, coord, idx):
                 )
                 save_vec('cams_data_avk', month, coord, cams_data_avk)
                 save_vec('cams_avk_pressure_grid', month, coord, cams_avk_pressure_grid)
-
                 del time, latitude, longitude, N2O, P
+
             ds.close()
 
         if need_iasi:
@@ -188,19 +205,59 @@ def plot_mean_columns_multi(months, coord, idx):
         if mean_apri is None: mean_apri = load_vec('mean_apri', month, coord)
         if iasi_pressure is None: iasi_pressure = load_vec('iasi_pressure', month, coord)
 
-        # -------- plot this month --------
-        ax.plot(cams_data,         cams_pressure,          label='CAMS')
-        ax.plot(iasi_data,         iasi_pressure,          label='IASI')
-        ax.plot(mean_apri,         iasi_pressure,          label='IASI a-priori')
-        ax.plot(cams_data_avk,     cams_avk_pressure_grid, label='CAMS (IASI AVK)')
+        # -------- build a common pressure grid (hPa) --------
+        # Use only arrays that exist; take the *overlapping* range to avoid extrapolation.
+        pres_list = []
+        for p in (cams_pressure, iasi_pressure, cams_avk_pressure_grid):
+            if p is not None:
+                p = np.asarray(p)
+                p = p[np.isfinite(p)]
+                if p.size:
+                    pres_list.append((np.nanmin(p), np.nanmax(p)))
+        if len(pres_list) == 0:
+            raise RuntimeError("No pressure arrays available to define a common grid.")
+
+        # overlap: [max(mins), min(maxs)]
+        p_low  = max(mn for mn, mx in pres_list)   # smallest pressure in overlap (upper atm)
+        p_high = min(mx for mn, mx in pres_list)   # largest pressure in overlap (near surface)
+        if not np.isfinite(p_low) or not np.isfinite(p_high) or p_low >= p_high:
+            raise RuntimeError("Pressure ranges do not overlap across profiles.")
+
+        # logarithmic spacing in ascending order (small -> large), good for vertical structure
+        N_GRID = 60
+        common_pressure_hpa = np.logspace(np.log10(p_low), np.log10(p_high), N_GRID)
+
+        # -------- interpolate all profiles to the common grid --------
+        cams_on_common      = _interp_to_grid(cams_pressure,             cams_data,         common_pressure_hpa)
+        iasi_on_common      = _interp_to_grid(iasi_pressure,             iasi_data,         common_pressure_hpa)
+        apriori_on_common   = _interp_to_grid(iasi_pressure,             mean_apri,         common_pressure_hpa)
+        cams_avk_on_common  = _interp_to_grid(cams_avk_pressure_grid,    cams_data_avk,     common_pressure_hpa)
+
+        # -------- plot this month on the COMMON grid --------
+        # if iasi_on_common is not None:
+        #     ax.plot(iasi_on_common - cams_on_common,     common_pressure_hpa, label='IASI')
+        # if apriori_on_common is not None:
+        #     ax.plot(apriori_on_common - cams_on_common,  common_pressure_hpa, label='IASI a-priori')
+        # if cams_avk_on_common is not None:
+        #     ax.plot(cams_avk_on_common - cams_on_common, common_pressure_hpa, label='CAMS (IASI AVK)')
+
+        # -------- plot this month on the COMMON grid --------
+        if cams_on_common is not None:
+            ax.plot(cams_on_common,     common_pressure_hpa, label='CAMS')
+        if iasi_on_common is not None:
+            ax.plot(iasi_on_common,     common_pressure_hpa, label='IASI')
+        if apriori_on_common is not None:
+            ax.plot(apriori_on_common,  common_pressure_hpa, label='IASI a-priori')
+        if cams_avk_on_common is not None:
+            ax.plot(cams_avk_on_common, common_pressure_hpa, label='CAMS (IASI AVK)')
 
         ax.invert_yaxis()
         ax.set_xlabel('N$_2$O (ppb)')
-        ax.set_title(calendar.month_name[month])  # e.g., "February"
+        ax.set_title(calendar.month_name[month])
 
     # shared y label on the leftmost axis
     axes[0].set_ylabel('Pressure (hPa)')
-    # put a single legend outside (right) or below
+    # one legend above all panels
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.03), frameon=False)
 
