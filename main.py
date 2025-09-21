@@ -11,9 +11,9 @@ file_path = "data/IASIA_MUSICA_030300_L2_AllTargetProducts_20200101000557_68496.
 dataset = nc.Dataset(file_path, mode='r')
 
 # Print a list of all variable names
-print("Variable names:")
-for var_name in dataset.variables:
-   print(var_name)
+# print("Variable names:")
+# for var_name in dataset.variables:
+#    print(var_name)
 
 
 def printvar(var_name):
@@ -38,13 +38,10 @@ def printvar(var_name):
     if hasattr(variable, 'dimensions'):
         print("Dimensions:", variable.dimensions)
 
-printvar('musica_ghg_error')
+#printvar('musica_ghg_error')
 #from IASI.mean_column import mean_apris
 
 #mean_apris()
-
-#printvar('musica_fit_quality_flag')
-#printvar('musica_ghg')
 
 #from CAMS.mean_cols import plot_mean_columns_multi
 
